@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="dataSourceStorageLocal">
+    <data-source name="ClickHouse - @localhost" uuid="449a651d-0bf8-40dc-ab26-efc3904ad437">
+      <database-info product="ClickHouse" version="21.3.2.5" jdbc-version="0.1" driver-name="ru.yandex.clickhouse-jdbc" driver-version="0.1" dbms="CLICKHOUSE" exact-version="21.3.2.5" exact-driver-version="0.1">
+        <identifier-quote-string>`</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="exact" quoted-identifiers="exact" />
+      <secret-storage>master_key</secret-storage>
+      <user-name>default</user-name>
+      <schema-mapping>
+        <introspection-scope>
+          <node kind="schema">
+            <name qname="default" />
+            <name qname="datasets" />
+          </node>
+        </introspection-scope>
+      </schema-mapping>
+    </data-source>
+    <data-source name="@localhost" uuid="e213c005-1c5c-4002-afde-6ba3ebac3b26">
+      <database-info product="ClickHouse" version="21.3.2.5" jdbc-version="0.1" driver-name="ru.yandex.clickhouse-jdbc" driver-version="0.1" dbms="CLICKHOUSE" exact-version="21.3.2.5" exact-driver-version="0.1">
+        <identifier-quote-string>`</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="exact" quoted-identifiers="exact" />
+      <secret-storage>master_key</secret-storage>
+      <schema-mapping>
+        <introspection-scope>
+          <node kind="schema" qname="@" />
+        </introspection-scope>
+      </schema-mapping>
+    </data-source>
+    <data-source name="@Tokanalytics" uuid="906e14a9-bcbb-4ee0-9581-4ff67ae276b2">
+      <database-info product="ClickHouse" version="21.3.2.5" jdbc-version="0.1" driver-name="ru.yandex.clickhouse-jdbc" driver-version="0.1" dbms="CLICKHOUSE" exact-version="21.3.2.5" exact-driver-version="0.1">
+        <identifier-quote-string>`</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="exact" quoted-identifiers="exact" />
+      <secret-storage>master_key</secret-storage>
+      <schema-mapping>
+        <introspection-scope>
+          <node kind="schema" qname="@" />
+        </introspection-scope>
+      </schema-mapping>
+    </data-source>
+    <data-source name="@localhost [2]" uuid="76fcfb39-db16-42fc-9f9f-d73e254e8ce4">
+      <database-info product="ClickHouse" version="21.3.2.5" jdbc-version="0.1" driver-name="ru.yandex.clickhouse-jdbc" driver-version="0.1" dbms="CLICKHOUSE" exact-version="21.3.2.5" exact-driver-version="0.1">
+        <identifier-quote-string>`</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="exact" quoted-identifiers="exact" />
+      <secret-storage>master_key</secret-storage>
+      <user-name>default</user-name>
+      <schema-mapping>
+        <introspection-scope>
+          <node kind="schema" qname="@" />
+        </introspection-scope>
+      </schema-mapping>
+    </data-source>
+    <data-source name="@WMR" uuid="b8955c1e-a4d3-468d-9bc4-73f06eb65cfe">
+      <database-info product="ClickHouse" version="21.3.2.5" jdbc-version="0.1" driver-name="ru.yandex.clickhouse-jdbc" driver-version="0.1" dbms="CLICKHOUSE" exact-version="21.3.2.5" exact-driver-version="0.1">
+        <identifier-quote-string>`</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="exact" quoted-identifiers="exact" />
+      <secret-storage>master_key</secret-storage>
+      <schema-mapping />
+    </data-source>
+  </component>
+</project>

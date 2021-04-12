@@ -3,21 +3,24 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/chromedp/cdproto/cdp"
-	"github.com/chromedp/cdproto/emulation"
-	"github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
+	internal "github.com/testSpace/internal/data/send"
+	"github.com/testSpace/internal/db"
+	"github.com/testSpace/internal/fullscreen"
 	"io/ioutil"
 	"log"
-	"math"
 	"strings"
 	"time"
+
+	_ "github.com/ClickHouse/clickhouse-go"
 )
 
-var buttonExist []*cdp.Node
-
 func main() {
-	urlStr := "https://www.tiktok.com/search?q=ааа&lang=ru-RU"
+	urlStr := "https://www.tiktok.com/search?q=ksenii_or&lang=ru-RU"
+
+	dbConnect := db.DBconnect()
+	db.DBinit(dbConnect)
+
 	start := time.Now()
 
 	ctx, cancel := chromedp.NewContext(
@@ -34,15 +37,12 @@ func main() {
 
 	err := chromedp.Run(ctx,
 		chromedp.Navigate(urlStr),
-
-		//находит кнопку ещё
-		//chromedp.Nodes(`.jsx-3392055781 .more`, &nodes, chromedp.AtLeast(0)),
-
 	)
 	if err != nil {
-		log.Println( err)
+		log.Println("Navigate to ", urlStr, " error: ", err)
 	}
 
+	// Рекурсивно, ждёт пока стрница прогрузится, проверяет существует ли кнопка ещё на стрнице, кликает при существовании, заканчивает при отсутствии.
 	flagButton := true
 	for flagButton {
 		err = chromedp.Run(ctx,
@@ -54,17 +54,18 @@ func main() {
 			flagButton = false
 		}
 	}
-	if err != nil {
-		log.Println( err)
+
+	if err != nil && err.Error() != "context deadline exceeded" {
+		log.Println("Waiting and Clicking button error:", err)
 	}
 
 	err = chromedp.Run(ctx,
 		chromedp.Text(`.search`, &text, chromedp.ByQuery),
-		fullScreenshot(urlStr, 1, &buf),
+		fullscreen.FullScreenshot(urlStr, 1, &buf),
 	)
 
 	if err != nil {
-		log.Println( err)
+		log.Println(err)
 	}
 
 	// записываем данные в фотографию
@@ -81,89 +82,11 @@ func main() {
 		}
 	}
 
+	internal.SendData(text, dbConnect)
 
-	for name, comment := range DataOfUsers{
-		fmt.Println("Name:", name,  "\nValue:", comment,"\n")
-	}
-
-	fmt.Println("Количество пользователей: ",  len(DataOfUsers))
+	fmt.Println("Количество пользователей: ", len(DataOfUsers))
 	fmt.Println("Время работы: ", time.Since(start))
 
-}
-
-//делает скиншот экрана полноразмерный заптсывавает под названием elementScreenshot.png
-func fullScreenshot(urlstr string, quality int64, res *[]byte) chromedp.Tasks {
-	return chromedp.Tasks{
-		chromedp.ActionFunc(func(ctx context.Context) error {
-			// get layout metrics
-			_, _, contentSize, err := page.GetLayoutMetrics().Do(ctx)
-			if err != nil {
-				return err
-			}
-
-			width, height := int64(math.Ceil(contentSize.Width)), int64(math.Ceil(contentSize.Height))
-
-			// force viewport emulation
-			err = emulation.SetDeviceMetricsOverride(width, height, 1, false).
-				WithScreenOrientation(&emulation.ScreenOrientation{
-					Type:  emulation.OrientationTypePortraitPrimary,
-					Angle: 0,
-				}).
-				Do(ctx)
-			if err != nil {
-				return err
-			}
-
-			// capture screenshot
-			*res, err = page.CaptureScreenshot().
-				WithQuality(quality).
-				WithClip(&page.Viewport{
-					X:      contentSize.X,
-					Y:      contentSize.Y,
-					Width:  contentSize.Width,
-					Height: contentSize.Height,
-					Scale:  1,
-				}).Do(ctx)
-			if err != nil {
-				return err
-			}
-			return nil
-		}),
-	}
-}
-
-//10 итераций - ждёт пока прогрузится объект
-func clickShowMore() chromedp.Tasks {
-	return chromedp.Tasks{
-		chromedp.Click(`.more`, chromedp.NodeVisible, chromedp.ByQuery),
-		chromedp.Click(`.more`, chromedp.NodeVisible, chromedp.ByQuery),
-		chromedp.Click(`.more`, chromedp.NodeVisible, chromedp.ByQuery),
-		chromedp.Click(`.more`, chromedp.NodeVisible, chromedp.ByQuery),
-		chromedp.Click(`.more`, chromedp.NodeVisible, chromedp.ByQuery),
-		chromedp.Click(`.more`, chromedp.NodeVisible, chromedp.ByQuery),
-		chromedp.Click(`.more`, chromedp.NodeVisible, chromedp.ByQuery),
-		chromedp.Click(`.more`, chromedp.NodeVisible, chromedp.ByQuery),
-		chromedp.Click(`.more`, chromedp.NodeVisible, chromedp.ByQuery),
-		chromedp.Click(`.more`, chromedp.NodeVisible, chromedp.ByQuery),
-	}
-}
-
-//TODO:
-// Рекурсивно, ждёт пока стрница прогрузится, проверяет существует ли кнопка ещё на стрнице, кликает при существовании, заканчивает при отсутствии.
-func recursiveSerchingAndClickButton(ctx context.Context) chromedp.Tasks {
-	return chromedp.Tasks{
-		RunWithTimeOut(&ctx, 3, chromedp.Tasks{
-			chromedp.Click(`.more`, chromedp.NodeVisible, chromedp.ByQuery),
-		}),
-		recursiveSerchingAndClickButton(ctx),
-	}
-}
-
-//TODO: принимает @data текст с аккаунтами, создаёт map c данными юзеров
-func PasrsingAccounts(data *string) string {
-
-	fmt.Println("реализовать PasrsingAccounts")
-	return ""
 }
 
 //ждём появления кнопки
@@ -173,4 +96,11 @@ func RunWithTimeOut(ctx *context.Context, timeout time.Duration, tasks chromedp.
 		defer cancel()
 		return tasks.Do(timeoutContext)
 	}
+}
+
+//TODO: принимает @data текст с аккаунтами, создаёт map c данными юзеров
+func PasrsingAccounts(data *string) string {
+
+	fmt.Println("реализовать PasrsingAccounts")
+	return ""
 }

@@ -1,0 +1,13 @@
+create table default.Users
+(
+	id Nullable(Int32),
+	Title Nullable(String),
+	SubTitle Nullable(String),
+	Comment Nullable(String),
+	Following Nullable(Int32),
+	Followers Nullable(Int32),
+	Likes Nullable(Int32),
+	Linkes Nullable(String)
+)
+engine = Memory;
+
