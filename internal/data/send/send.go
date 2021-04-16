@@ -4,10 +4,11 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/testSpace/internal/db"
+	"log"
 	"strings"
 )
 
-func SendData(text string , dbConnect *sql.DB) {
+func SendData(text string, dbConnect *sql.DB) {
 	lines := strings.Split(text, "\n\n")
 	DataOfUsers := make(map[string]string)
 
@@ -24,4 +25,6 @@ func SendData(text string , dbConnect *sql.DB) {
 		id++
 
 	}
+
+	log.Print("Количество пользователей: ", len(DataOfUsers))
 }

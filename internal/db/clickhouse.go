@@ -17,9 +17,8 @@ type User struct {
 }
 
 //Открывает базу данных и проверяет работоспособность
-func DBconnect() *sql.DB{
+func DBconnect() *sql.DB {
 	connect, err := sql.Open("clickhouse", "tcp://127.0.0.1:9000?debug=true")
-
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -31,7 +30,6 @@ func DBconnect() *sql.DB{
 	return connect
 }
 
-
 func DBinit(connect *sql.DB) {
 	if _, err := connect.Exec(`
 		CREATE TABLE IF NOT EXISTS default.Users(
@@ -40,12 +38,14 @@ func DBinit(connect *sql.DB) {
 			SubTitle Nullable(String),
 			Comment Nullable(String)
 		) engine=Memory
-	`); err != nil{
-		log.Fatal(err)
+	`); err != nil {
+		log.Print("DB is no Iinit", err)
+		return
 	}
+
 }
 
-func DBAddUser(ID int32, Title string, SubTitle string, Comment string, connect *sql.DB){
+func DBAddUser(ID int32, Title string, SubTitle string, Comment string, connect *sql.DB) {
 	var (
 		tx, _   = connect.Begin()
 		stmt, _ = tx.Prepare("INSERT INTO default.Users (id, Title, SubTitle, Comment) VAlUES (?, ?, ?, ?)")
@@ -66,7 +66,39 @@ func DBAddUser(ID int32, Title string, SubTitle string, Comment string, connect 
 		log.Fatal(err)
 	}
 
+}
 
+func InitUsers(connect *sql.DB) map[string]int32{
+	usersMap := make(map[string]int32)
 
+	rows, err := connect.Query("SELECT id, Title FROM default.Users")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
 
+	for rows.Next() {
+		var (
+			id int32
+			title string
+		)
+		if err := rows.Scan(&id, &title); err != nil {
+			log.Fatal(err)
+		}
+
+		_, ok := usersMap[title]
+
+		if ok {
+			log.Println("user повторяется")
+		}else {
+			usersMap[title] = id
+		}
+
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	return usersMap
 }

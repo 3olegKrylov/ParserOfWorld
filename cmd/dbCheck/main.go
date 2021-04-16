@@ -2,10 +2,8 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
-	"log"
-
 	_ "github.com/ClickHouse/clickhouse-go"
+	"log"
 )
 
 type User struct {
@@ -43,35 +41,56 @@ func main() {
 		log.Fatal(err)
 	}
 
-	newUser := User{
-		3,
-		"Иван",
-		"Ментов",
-		"комментарий так себе",
-		5,
-		8,
-		3,
-		"https://clickhouse.tech/docs/ru/sql-reference/statements/insert-into/",
-	}
+	//newUser := User{
+	//	3,
+	//	"Иван",
+	//	"Ментов",
+	//	"комментарий так себе",
+	//	5,
+	//	8,
+	//	3,
+	//	"https://clickhouse.tech/docs/ru/sql-reference/statements/insert-into/",
+	//}
 
-	var (
-		tx, _   = connect.Begin()
-		stmt, _ = tx.Prepare("INSERT INTO default.Users (id, Title, SubTitle, Comment) VAlUES (?, ?, ?, ?)")
-	)
-	defer stmt.Close()
+	//var (
+	//	tx, _   = connect.Begin()
+	//	stmt, _ = tx.Prepare("INSERT INTO default.Users (id, Title, SubTitle, Comment) VAlUES (?, ?, ?, ?)")
+	//)
+	//
+	//defer stmt.Close()
+	//
+	//if res, err := stmt.Exec(
+	//	newUser.Id,
+	//	newUser.Title,
+	//	newUser.SubTitle,
+	//	newUser.Comment,
+	//); err != nil {
+	//	log.Fatal(err)
+	//} else {
+	//	fmt.Println(res)
+	//}
+	//
+	//if err := tx.Commit(); err != nil {
+	//	log.Fatal(err)
+	//}
 
-	if res, err := stmt.Exec(
-		newUser.Id,
-		newUser.Title,
-		newUser.SubTitle,
-		newUser.Comment,
-	); err != nil {
+	rows, err := connect.Query("SELECT Title FROM default.Users WHERE id = 1")
+	if err != nil {
 		log.Fatal(err)
-	} else {
-		fmt.Println(res)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			title string
+		)
+		if err := rows.Scan(&title); err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("title: %s", title)
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := rows.Err(); err != nil {
 		log.Fatal(err)
 	}
 
