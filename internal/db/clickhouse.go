@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"github.com/testSpace/model"
 	"log"
 )
 
@@ -33,31 +34,60 @@ func DBconnect() *sql.DB {
 func DBinit(connect *sql.DB) {
 	if _, err := connect.Exec(`
 		CREATE TABLE IF NOT EXISTS default.Users(
-			id Nullable(Int32),
-			Title Nullable(String),
-			SubTitle Nullable(String),
-			Comment Nullable(String)
-		) engine=Memory
-	`); err != nil {
+			Id 			  	  Nullable(Int32),
+			LinkAccount	      Nullable(String),    
+			Title 		      Nullable(String),
+			SubTitle 		  Nullable(String),
+			Comment 		  Nullable(String), 
+			Mail   			  Nullable(String),
+			Telegram          Nullable(String),
+			Instagram         Nullable(String),
+			Linkes            Nullable(String),
+			LanguageAccount   Nullable(String),
+			Following         Nullable(Int32),
+			Followers         Nullable(Int32),
+			Likes             Nullable(Int32),
+			LastPostShowTotal Nullable(Int32),
+			AverageShows      Nullable(Int32),
+			MedianShows       Nullable(Int32),
+			TotalPosts        Nullable(Int32),
+			LastActionTime    Nullable(DateTime),
+			ParsingTime       Nullable(DateTime)
+		) engine=Memory`); err != nil {
 		log.Print("DB is no Iinit", err)
 		return
 	}
 
 }
 
-func DBAddUser(ID int32, Title string, SubTitle string, Comment string, connect *sql.DB) {
+func DBAddUser(user model.UserData, connect *sql.DB) {
 	var (
 		tx, _   = connect.Begin()
-		stmt, _ = tx.Prepare("INSERT INTO default.Users (id, Title, SubTitle, Comment) VAlUES (?, ?, ?, ?)")
+		stmt, _ = tx.Prepare("INSERT INTO default.Users (Id,LinkAccount,Title,SubTitle,Comment,Mail,Telegram,Instagram,Linkes,LanguageAccount,Following,Followers,Likes,LastPostShowTotal,AverageShows,MedianShows,TotalPosts,LastActionTime,ParsingTime) VAlUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 	)
 
 	defer stmt.Close()
 
 	if _, err := stmt.Exec(
-		ID,
-		Title,
-		SubTitle,
-		Comment,
+		user.Id,
+		user.LinkAccount,
+		user.Title,
+		user.SubTitle,
+		user.Comment,
+		user.Mail,
+		user.Telegram,
+		user.Instagram,
+		user.Linkes,
+		user.LanguageAccount,
+		user.Following,
+		user.Followers,
+		user.Likes,
+		user.LastPostShowTotal,
+		user.AverageShows,
+		user.MedianShows,
+		user.TotalPosts,
+		user.LastActionTime,
+		user.ParsingTime,
 	); err != nil {
 		log.Fatal(err)
 	}
@@ -68,18 +98,19 @@ func DBAddUser(ID int32, Title string, SubTitle string, Comment string, connect 
 
 }
 
-func InitUsers(connect *sql.DB) map[string]int32{
+func InitUsers(connect *sql.DB) map[string]int32 {
 	usersMap := make(map[string]int32)
 
-	rows, err := connect.Query("SELECT id, Title FROM default.Users")
+	rows, err := connect.Query("SELECT Id, Title FROM default.Users")
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	defer rows.Close()
 
 	for rows.Next() {
 		var (
-			id int32
+			id    int32
 			title string
 		)
 		if err := rows.Scan(&id, &title); err != nil {
@@ -90,7 +121,7 @@ func InitUsers(connect *sql.DB) map[string]int32{
 
 		if ok {
 			log.Println("user повторяется")
-		}else {
+		} else {
 			usersMap[title] = id
 		}
 

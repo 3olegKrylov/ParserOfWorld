@@ -11,13 +11,38 @@ import (
 	"io/ioutil"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go"
 )
 
 func main() {
-	urlStr := []string{"https://www.tiktok.com/search?q=ksenii_or&lang=ru-RU", "https://www.tiktok.com/search?q=ааааа&lang=ru-RU", "https://www.tiktok.com/search?q=бббб&lang=ru-RU"}
+	urlStr := []string{
+		"https://www.tiktok.com/search?q=ksenii_or&lang=ru-RU",
+		"https://www.tiktok.com/search?q=ааааа&lang=ru-RU",
+		"https://www.tiktok.com/search?q=ббббб&lang=ru-RU",
+		"https://www.tiktok.com/search?q=ссссс&lang=ru-RU",
+		"https://www.tiktok.com/search?q=ддддд&lang=ru-RU",
+		"https://www.tiktok.com/search?q=ййййй&lang=ru-RU",
+		"https://www.tiktok.com/search?q=ццццц&lang=ru-RU",
+		"https://www.tiktok.com/search?q=ууууу&lang=ru-RU",
+		"https://www.tiktok.com/search?q=ккккк&lang=ru-RU",
+		"https://www.tiktok.com/search?q=еееее&lang=ru-RU",
+		"https://www.tiktok.com/search?q=ннннн&lang=ru-RU",
+		"https://www.tiktok.com/search?q=ггггг&lang=ru-RU",
+		"https://www.tiktok.com/search?q=жжжжж&lang=ru-RU",
+		"https://www.tiktok.com/search?q=эээээ&lang=ru-RU",
+		"https://www.tiktok.com/search?q=иииии&lang=ru-RU",
+		"https://www.tiktok.com/search?q=яяяяя&lang=ru-RU",
+		"https://www.tiktok.com/search?q=ттттт&lang=ru-RU",
+		"https://www.tiktok.com/search?q=ффффф&lang=ru-RU",
+		"https://www.tiktok.com/search?q=ююююю&lang=ru-RU",
+		"https://www.tiktok.com/search?q=ёёёёё&lang=ru-RU",
+		"https://www.tiktok.com/search?q=ззззз&lang=ru-RU",
+		"https://www.tiktok.com/search?q=ыыыыы&lang=ru-RU",
+		"https://www.tiktok.com/search?q=ччччч&lang=ru-RU",
+	}
 
 	//подключение к clickhouse
 	dbConnect := db.DBconnect()
@@ -26,17 +51,33 @@ func main() {
 
 	//инициализация карты пользователей
 	userMap := db.InitUsers(dbConnect)
-	fmt.Println(userMap)
 
 	start := time.Now()
-
+	countOfUsers := int32(len(userMap))
 	//парсинг аккаунтов
 	for i := 0; i < len(urlStr); i++ {
 		text := Parse(urlStr[i])
-		internal.SendData(text, dbConnect)
 
-		fmt.Println("Время работы: ", time.Since(start))
+		lines := strings.Split(text, "\n\n")
+
+		var newUsers []string
+
+		for num, value := range lines {
+			if strings.HasSuffix(value, "Подписчики") {
+				_, ok := userMap[lines[num-1]]
+				if !ok {
+					newUsers = append(newUsers, lines[num-1])
+				}
+			}
+		}
+		if len(newUsers) > 0 {
+			internal.SendData(newUsers, dbConnect, countOfUsers+1)
+			countOfUsers = countOfUsers + int32(len(newUsers))
+			fmt.Println("Время работы: ", time.Since(start))
+		}
 	}
+
+	fmt.Println("Время: ", time.Since(start), " \nКол-во юзеров: ", countOfUsers)
 
 }
 
@@ -59,6 +100,17 @@ func Parse(urlStr string) string {
 		log.Fatal("Error Navigate Parsing Accounts to ", urlStr, "\nerror: ", err)
 	} else {
 		log.Println("Navigate Parsing Accounts to ", urlStr)
+	}
+
+	checkClearFinding := ""
+
+	err = chromedp.Run(ctx, parsing.RunWithTimeOut(
+		1,
+		chromedp.Tasks{chromedp.Text(`.error-page`, &checkClearFinding, chromedp.NodeVisible, chromedp.ByQuery),
+		},
+	))
+	if checkClearFinding != "" {
+		return ""
 	}
 
 	if err := ioutil.WriteFile("elementScreenshotStart.png", buf, 0o644); err != nil {
@@ -94,11 +146,9 @@ func Parse(urlStr string) string {
 
 			log.Println("преывшено кол-во итераций перезагружаем страницу: ", urlStr)
 			err = chromedp.Run(ctx,
-				chromedp.OuterHTML(`html`, &text, chromedp.NodeVisible, chromedp.ByQuery),
-				chromedp.Sleep(time.Second*5),
+				chromedp.Sleep(time.Millisecond*500),
 			)
 
-			fmt.Println(text)
 			text = Parse(urlStr)
 			siteIsParse = false
 			break
@@ -129,5 +179,3 @@ func Parse(urlStr string) string {
 		return text
 	}
 }
-
-

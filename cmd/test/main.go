@@ -14,5 +14,5 @@ func main() {
 	)
 	defer cancel()
 
-	parsing.ParsingAccountData("kross_and_ershov", ctx,1)
+	parsing.ParsingAccountData("ksenii_1", ctx,1)
 }
