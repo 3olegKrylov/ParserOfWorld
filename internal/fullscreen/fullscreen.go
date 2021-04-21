@@ -9,7 +9,7 @@ import (
 )
 
 //делает скиншот экрана полноразмерный записывавает под названием elementScreenshot.png
-func FullScreenshot( quality int64, res *[]byte) chromedp.Tasks {
+func FullScreenshot(quality int64, res *[]byte) chromedp.Tasks {
 	return chromedp.Tasks{
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			// get layout metrics
@@ -48,4 +48,3 @@ func FullScreenshot( quality int64, res *[]byte) chromedp.Tasks {
 		}),
 	}
 }
-

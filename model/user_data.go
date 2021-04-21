@@ -13,8 +13,9 @@ type UserData struct {
 	Mail              string    //почта в комменте
 	Telegram          string    //телеграм в комменте
 	Instagram         string    //инстаграм в комменте
-	Linkes            string    //ссылки в комменте
+	Links             string    //ссылки в комменте
 	LanguageAccount   string    //имя аккаунта
+	Phone             string    //телефон
 	Following         int32     //~ количество подписок
 	Followers         int32     //~ количество подписчиков
 	Likes             int32     //~ количество лайков

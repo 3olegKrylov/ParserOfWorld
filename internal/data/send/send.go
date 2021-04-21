@@ -10,7 +10,7 @@ import (
 	"log"
 )
 
-func SendData(users []string, dbConnect *sql.DB, totalUsers int32) []string {
+func SendData(users []string, dbConnect *sql.DB, totalUsers *int32) []string {
 	ctx, cancel := chromedp.NewContext(
 		context.Background(),
 		chromedp.WithLogf(log.Printf),
@@ -18,18 +18,16 @@ func SendData(users []string, dbConnect *sql.DB, totalUsers int32) []string {
 	defer cancel()
 
 	var newUsers []string
-	total := totalUsers
 
 	for _, value := range users {
 
-		user := parsing.ParsingAccountData(value, ctx, total)
+		user := parsing.ParsingAccountData(value, ctx, *totalUsers+1)
 		if user.Title != "" {
+			*totalUsers = *totalUsers + int32(1)
 			go func() { db.DBAddUser(user, dbConnect) }()
 			newUsers = append(newUsers, user.Title)
 			fmt.Println("Name:", user.Title, "\nID:", user.Id)
 		}
-
-		total++
 	}
 
 	return newUsers

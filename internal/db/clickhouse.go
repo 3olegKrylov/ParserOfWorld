@@ -42,8 +42,9 @@ func DBinit(connect *sql.DB) {
 			Mail   			  Nullable(String),
 			Telegram          Nullable(String),
 			Instagram         Nullable(String),
-			Linkes            Nullable(String),
+			Links             Nullable(String),
 			LanguageAccount   Nullable(String),
+			Phone			  Nullable(String),
 			Following         Nullable(Int32),
 			Followers         Nullable(Int32),
 			Likes             Nullable(Int32),
@@ -63,7 +64,7 @@ func DBinit(connect *sql.DB) {
 func DBAddUser(user model.UserData, connect *sql.DB) {
 	var (
 		tx, _   = connect.Begin()
-		stmt, _ = tx.Prepare("INSERT INTO default.Users (Id,LinkAccount,Title,SubTitle,Comment,Mail,Telegram,Instagram,Linkes,LanguageAccount,Following,Followers,Likes,LastPostShowTotal,AverageShows,MedianShows,TotalPosts,LastActionTime,ParsingTime) VAlUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+		stmt, _ = tx.Prepare("INSERT INTO default.Users (Id,LinkAccount,Title,SubTitle,Comment,Mail,Telegram,Instagram,Links,LanguageAccount,Phone,Following,Followers,Likes,LastPostShowTotal,AverageShows,MedianShows,TotalPosts,LastActionTime,ParsingTime) VAlUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 	)
 
 	defer stmt.Close()
@@ -77,8 +78,9 @@ func DBAddUser(user model.UserData, connect *sql.DB) {
 		user.Mail,
 		user.Telegram,
 		user.Instagram,
-		user.Linkes,
+		user.Links,
 		user.LanguageAccount,
+		user.Phone,
 		user.Following,
 		user.Followers,
 		user.Likes,

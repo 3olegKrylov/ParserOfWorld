@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"github.com/ClickHouse/clickhouse-go"
 	chromedp "github.com/chromedp/chromedp"
+	"github.com/mcnijman/go-emailaddress"
 	"github.com/testSpace/internal/fullscreen"
 	"github.com/testSpace/model"
 	"io/ioutil"
 	"log"
+	"mvdan.cc/xurls/v2"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -27,8 +30,9 @@ func ParsingAccountData(nick string, ctx context.Context, id int32) model.UserDa
 		Mail:              "",
 		Telegram:          "",
 		Instagram:         "",
-		Linkes:            "",
+		Links:             "",
 		LanguageAccount:   "",
+		Phone:             "",
 		Following:         0,
 		Followers:         0,
 		Likes:             0,
@@ -53,20 +57,18 @@ func ParsingAccountData(nick string, ctx context.Context, id int32) model.UserDa
 	}
 	log.Println("Navigate to ", url)
 
-
-	userIsExist:=""
+	userIsExist := ""
 	err = chromedp.Run(ctx, RunWithTimeOut(
 		1,
-		chromedp.Tasks{chromedp.Text(`.title`, &userIsExist, chromedp.NodeVisible, chromedp.ByQuery),
-		},
+		chromedp.Tasks{chromedp.Text(`.title`, &userIsExist, chromedp.NodeVisible, chromedp.ByQuery)},
 	))
 
 	if userIsExist == "Couldn't find this account" {
 		return model.UserData{}
 	}
-
+	titleUser := ""
 	err = chromedp.Run(ctx,
-		chromedp.Text(`.share-title`, &user.Title, chromedp.NodeVisible, chromedp.ByQuery),
+		chromedp.Text(`.share-title`, &titleUser, chromedp.NodeVisible, chromedp.ByQuery),
 		chromedp.Text(`.share-sub-title`, &user.SubTitle, chromedp.NodeVisible, chromedp.ByQuery),
 		chromedp.Text(`.share-desc`, &user.Comment, chromedp.NodeVisible, chromedp.ByQuery),
 		chromedp.Text(`.count-infos`, &numericData, chromedp.NodeVisible, chromedp.ByQuery),
@@ -75,17 +77,32 @@ func ParsingAccountData(nick string, ctx context.Context, id int32) model.UserDa
 		log.Fatal(err)
 	}
 
-	checkClearAccount := ""
+	user.Title = strings.TrimSpace(titleUser)
 
+	checkClearAccount := ""
 	err = chromedp.Run(ctx, RunWithTimeOut(
 		1,
-		chromedp.Tasks{chromedp.Text(`.error-page`, &checkClearAccount, chromedp.NodeVisible, chromedp.ByQuery),
-		},
+		chromedp.Tasks{chromedp.Text(`.error-page`, &checkClearAccount, chromedp.NodeVisible, chromedp.ByQuery)},
 	))
 	fmt.Println(checkClearAccount)
-	user.Followers, user.Following, user.Likes = parserNumericData(numericData)
+	user.Following, user.Followers, user.Likes = numericDataParser(numericData)
 
-	//Todo: распарсить комментарий
+	linkOnTitile := ""
+	err = chromedp.Run(ctx, RunWithTimeOut(
+		1,
+		chromedp.Tasks{chromedp.Text(`.share-links`, &linkOnTitile, chromedp.NodeVisible, chromedp.ByQuery)},
+	))
+
+	if linkOnTitile != "" {
+		user.Links = linkOnTitile
+	}
+	moreLinks := ""
+	if user.Comment != "No bio yet." {
+		moreLinks, user.Phone, user.Instagram, user.Telegram, user.Mail = commentParser(user.Comment)
+	}
+
+	user.Links = user.Links + moreLinks
+
 	//У пользователя нет контента
 	if checkClearAccount != "" {
 		return user
@@ -127,7 +144,6 @@ func ParsingAccountData(nick string, ctx context.Context, id int32) model.UserDa
 		} else {
 			log.Println("Перезагружаем: ", what)
 			return ParsingAccountData(nick, ctx, id)
-
 		}
 	}
 
@@ -149,7 +165,7 @@ func ParsingAccountData(nick string, ctx context.Context, id int32) model.UserDa
 	fmt.Println("likesCard: ", likesCard)
 	user.LastPostShowTotal, _, _, _ = parserCardShows(likesCard)
 	fmt.Println("parserCardShows end")
-	user.LastActionTime = time.Time(parseLastActionTime(ActionTime))
+	user.LastActionTime = time.Time(lastActionTimeParser(ActionTime))
 	fmt.Println(user)
 
 	return user
@@ -163,7 +179,7 @@ func parserCardShows(data string) (int32, int32, int32, int32) {
 	total := int32(0)
 
 	for num, _ := range cardShowArr {
-		likeOfCard := parserNum(strings.TrimSpace(cardShowArr[num]))
+		likeOfCard := numParser(strings.TrimSpace(cardShowArr[num]))
 		if likeOfCard != -1 {
 			cardsLikes = append(cardsLikes, likeOfCard)
 			total = total + likeOfCard
@@ -205,13 +221,13 @@ func nlogn_median(l []int32) int32 {
 }
 
 //парсит строку строку аккаунта, где содержится информация об аккаунте
-func parserNumericData(data string) (countFollowing int32, countFollowers int32, Likes int32) {
+func numericDataParser(data string) (countFollowing int32, countFollowers int32, Likes int32) {
 	dataArr := strings.Split(data, "\n")
-	return parserNum(dataArr[0]), parserNum(dataArr[2]), parserNum(dataArr[4])
+	return numParser(dataArr[0]), numParser(dataArr[2]), numParser(dataArr[4])
 }
 
 //перевдит строки вида 21.2M в 21200000 и 21.1K в 21100 вернёт -1 если не смогу распарсить
-func parserNum(num string) int32 {
+func numParser(num string) int32 {
 	num = strings.TrimSpace(num)
 	switch num[(len(num) - 1):] {
 	case "M":
@@ -242,14 +258,17 @@ func parserNum(num string) int32 {
 
 }
 
-func parseLastActionTime(data string) clickhouse.Date {
+//TODO: парсить дату для "3 дня назад"
+//прасит текст со временем на сранице видео
+func lastActionTimeParser(data string) clickhouse.Date {
+
 	dataArr := strings.Split(data, "·")
 	resStr := strings.TrimSpace(dataArr[1])
 
 	fmt.Println(resStr)
 	dataType := strings.Split(resStr, "-")
 
-	if strings.Contains(dataType[0]," "){
+	if strings.Contains(dataType[0], " ") {
 		return clickhouse.Date(time.Now())
 	}
 
@@ -279,4 +298,97 @@ func parseLastActionTime(data string) clickhouse.Date {
 		}
 		return clickhouse.Date(time.Date(year, month, day, 0, 0, 0, 0, time.Local))
 	}
+}
+
+//парисит из описания/комментария при наличии ссылки номера телефонов, инстаграм, тг, почты
+func commentParser(comment string) (links string, phoneNum string, instagram string, telegram string, mail string) {
+	rxRelaxed := xurls.Relaxed()
+	relUrl := rxRelaxed.FindString(comment)
+
+	rxStrict := xurls.Strict()
+	linksArr := rxStrict.FindAllString(comment, -1)
+
+	for _, l := range linksArr {
+		links = links + " " + l
+	}
+	if relUrl != "" {
+		links = links + " " + relUrl
+	}
+
+	comment = strings.ToLower(comment)
+	words := strings.Split(comment, " ")
+
+	var res []string
+	for _, val := range words {
+		newWords := strings.Split(val, "\n")
+		res = append(res, newWords...)
+	}
+
+	words = res
+	//парсер для номеров
+	re := regexp.MustCompile(`^(?:(?:\(?(?:00|\+)([1-4]\d\d|[1-9]\d?)\)?)?[\-\.\ \\\/]?)?((?:\(?\d{1,}\)?[\-\.\ \\\/]?){0,})(?:[\-\.\ \\\/]?(?:#|ext\.?|extension|x)[\-\.\ \\\/]?(\d+))?$`)
+
+	fmt.Println("Words", words)
+	for num, value := range words {
+		//instagram
+		if value == "inst:" || value == "inst" || value == "instagram:" || value == "instagram" || value == "инст:" || value == "инст" || value == "инстаграм:" || value == "инстаграм" {
+			if len(words) >= num+2 {
+				if words[num+1] == "-" || words[num+1] == ":" {
+					if len(words) >= num+3 {
+						instagram += words[num+2] + " "
+					}
+				} else {
+					instagram += words[num+1] + " "
+				}
+			}
+		}
+		//phone
+		arrNumber := re.MatchString(value)
+		if arrNumber == true && value != "-" {
+			phoneNum = phoneNum + " " + value
+		}
+		if value == "phone" || value == "phone:" {
+			if len(words) >= num+2 {
+				if words[num+1] == "-" || words[num+1] == ":" {
+					if len(words) >= num+3 {
+						phoneNum += words[num+2] + " "
+					}
+				} else {
+					phoneNum += words[num+1] + " "
+				}
+			}
+		}
+
+		//telegram
+		if value == "telegram" || value == "tg" || value == "telegram:" || value == "tg:" || value == "телеграм" || value == "тг" || value == "телеграм:" || value == "тг:" {
+			if len(words) >= num+2 {
+				if words[num+1] == "-" || words[num+1] == ":" {
+					if len(words) >= num+3 {
+						telegram += words[num+2] + " "
+					}
+				} else {
+					telegram += words[num+1] + " "
+				}
+			}
+		}
+
+	}
+
+	text := []byte(comment)
+	validateHost := false
+
+	emails := emailaddress.Find(text, validateHost)
+
+	for _, e := range emails {
+		mail = mail + e.String() + ""
+	}
+
+	fmt.Println("comment: ", comment)
+	fmt.Println("linkes: ", links)
+	fmt.Println("number: ", phoneNum)
+	fmt.Println("instagram: ", instagram)
+	fmt.Println("telegram: ", telegram)
+	fmt.Println("mails: ", mail)
+
+	return links, phoneNum, instagram, telegram, mail
 }
