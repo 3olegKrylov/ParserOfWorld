@@ -3,17 +3,14 @@
   <component name="ChangeListManager">
     <list default="true" id="a4d674a2-631f-44ca-a83c-9ac96857891e" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/AccountPhoto.png" beforeDir="false" afterPath="$PROJECT_DIR$/AccountPhoto.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/BANelementScreenshot53.png" beforeDir="false" afterPath="$PROJECT_DIR$/BANelementScreenshot53.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/DataBeforClick.png" beforeDir="false" afterPath="$PROJECT_DIR$/DataBeforClick.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/main.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/elementScreenshot.png" beforeDir="false" afterPath="$PROJECT_DIR$/elementScreenshot.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/elementScreenshotStart.png" beforeDir="false" afterPath="$PROJECT_DIR$/elementScreenshotStart.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/data/send/send.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/data/send/send.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/internal/db/clickhouse.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/db/clickhouse.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/AccountPhoto.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/BANelementScreenshot53.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/DataBeforClick.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/cmd/test/main.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/test/main.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/elementScreenshot.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/elementScreenshotStart.png" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/parsing/account.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/parsing/account.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/internal/parsing/findingList.go" beforeDir="false" afterPath="$PROJECT_DIR$/internal/parsing/findingList.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/model/user_data.go" beforeDir="false" afterPath="$PROJECT_DIR$/model/user_data.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

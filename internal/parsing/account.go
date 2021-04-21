@@ -47,7 +47,6 @@ func ParsingAccountData(nick string, ctx context.Context, id int32) model.UserDa
 	numericData := ""
 	likesCard := ""
 	ActionTime := ""
-	var buf []byte
 
 	err := chromedp.Run(ctx,
 		chromedp.Navigate(url),
@@ -85,6 +84,7 @@ func ParsingAccountData(nick string, ctx context.Context, id int32) model.UserDa
 		chromedp.Tasks{chromedp.Text(`.error-page`, &checkClearAccount, chromedp.NodeVisible, chromedp.ByQuery)},
 	))
 	fmt.Println(checkClearAccount)
+
 	user.Following, user.Followers, user.Likes = numericDataParser(numericData)
 
 	linkOnTitile := ""
@@ -116,16 +116,6 @@ func ParsingAccountData(nick string, ctx context.Context, id int32) model.UserDa
 	}
 
 	log.Println("Получили данные со страницы")
-	err = chromedp.Run(ctx,
-		fullscreen.FullScreenshot(1, &buf),
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if err := ioutil.WriteFile("DataBeforClick.png", buf, 0o644); err != nil {
-		log.Fatal(err)
-	}
 
 	//при всплывающем модалке начинаем всё заново (пока её не станет)
 	for {
@@ -134,38 +124,75 @@ func ParsingAccountData(nick string, ctx context.Context, id int32) model.UserDa
 			RunWithTimeOut(
 				3,
 				chromedp.Tasks{chromedp.Text(`.iframe-container`, &what, chromedp.NodeVisible, chromedp.ByQuery),
-					fullscreen.FullScreenshot(1, &buf),
+					//fullscreen.FullScreenshot(1, &buf),
 				},
 			),
 		)
 		if err != nil {
-			log.Println("Выходим из цикла текст: ", what, "\n", err)
+			log.Println("Модальное окно исчесзло, смотрим первое видео", "\n", err)
 			break
 		} else {
-			log.Println("Перезагружаем: ", what)
+			log.Println("Перезагружаем cстраницу, из за модального окна ", what)
 			return ParsingAccountData(nick, ctx, id)
 		}
 	}
+	var buf []byte
+	for {
+		err = chromedp.Run(ctx,
+			RunWithTimeOut(1,
+				chromedp.Tasks{chromedp.Click(`._ratio_wrapper`, chromedp.NodeVisible, chromedp.ByQuery),
+				},
+			))
 
-	err = chromedp.Run(ctx,
-		chromedp.Click(`._ratio_wrapper`, chromedp.NodeVisible, chromedp.ByQuery),
-		chromedp.Sleep(time.Millisecond*100),
-		chromedp.Reload(),
-		fullscreen.FullScreenshot(1, &buf),
-		chromedp.Text(`.author-nickname`, &ActionTime, chromedp.NodeVisible, chromedp.ByQuery),
-	)
-	if err != nil {
-		log.Fatal(err)
+		if err == nil {
+			err = chromedp.Run(ctx, fullscreen.FullScreenshot(1, &buf))
+			if err := ioutil.WriteFile("ПерешлиВВидео.png", buf, 0o644); err != nil {
+				log.Fatal(err)
+			}
+
+			break
+		}
 	}
 
-	if err := ioutil.WriteFile("AccountPhoto.png", buf, 0o644); err != nil {
-		log.Fatal(err)
+	fmt.Println("перешли в видео")
+	for {
+		err = chromedp.Run(ctx,
+			RunWithTimeOut(1,
+				chromedp.Tasks{chromedp.Text(`.author-nickname`, &ActionTime, chromedp.NodeVisible, chromedp.ByQuery),
+				},
+			))
+
+		if err == nil {
+			break
+		}
+
+		checkClearVideo := ""
+		err = chromedp.Run(ctx,
+			chromedp.Reload(),
+			RunWithTimeOut(
+				1,
+				chromedp.Tasks{chromedp.Text(`.error-page`, &checkClearVideo, chromedp.NodeVisible, chromedp.ByQuery)},
+			),
+			fullscreen.FullScreenshot(1, &buf),
+		)
+
+		if err := ioutil.WriteFile("ИщемДату.png", buf, 0o644); err != nil {
+			log.Fatal(err)
+		}
+
+		if checkClearVideo != "" {
+
+			break
+		}
+
 	}
 
 	fmt.Println("likesCard: ", likesCard)
 	user.LastPostShowTotal, _, _, _ = parserCardShows(likesCard)
 	fmt.Println("parserCardShows end")
-	user.LastActionTime = time.Time(lastActionTimeParser(ActionTime))
+	if ActionTime != "" {
+		user.LastActionTime = time.Time(lastActionTimeParser(ActionTime))
+	}
 	fmt.Println(user)
 
 	return user
@@ -316,6 +343,8 @@ func commentParser(comment string) (links string, phoneNum string, instagram str
 	}
 
 	comment = strings.ToLower(comment)
+	comment = strings.Replace(comment, "\n", " ", -1)
+	comment = strings.Replace(comment, ",", " ", -1)
 	words := strings.Split(comment, " ")
 
 	var res []string
@@ -331,7 +360,7 @@ func commentParser(comment string) (links string, phoneNum string, instagram str
 	fmt.Println("Words", words)
 	for num, value := range words {
 		//instagram
-		if value == "inst:" || value == "inst" || value == "instagram:" || value == "instagram" || value == "инст:" || value == "инст" || value == "инстаграм:" || value == "инстаграм" {
+		if value == "inst:" || value == "inst" || value == "instagram:" || value == "instagram" || value == "инст:" || value == "инст" || value == "инстаграм:" || value == "инстаграм" || value == "инста" || value == "инста:" || value == "инстаграмм:" || value == "инстаграмм" {
 			if len(words) >= num+2 {
 				if words[num+1] == "-" || words[num+1] == ":" {
 					if len(words) >= num+3 {
@@ -360,7 +389,7 @@ func commentParser(comment string) (links string, phoneNum string, instagram str
 		}
 
 		//telegram
-		if value == "telegram" || value == "tg" || value == "telegram:" || value == "tg:" || value == "телеграм" || value == "тг" || value == "телеграм:" || value == "тг:" {
+		if value == "telegram" || value == "tg" || value == "telegram:" || value == "tg:" || value == "тг" || value == "телеграм:" || value == "телеграм" || value == "тг:" || value == "телеграмм:" || value == "телеграмм" {
 			if len(words) >= num+2 {
 				if words[num+1] == "-" || words[num+1] == ":" {
 					if len(words) >= num+3 {

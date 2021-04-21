@@ -7,7 +7,6 @@ import (
 	"github.com/testSpace/internal/fullscreen"
 	"io/ioutil"
 	"log"
-	"strconv"
 	"time"
 )
 
@@ -56,7 +55,7 @@ func ParseFindList(urlStr string) string {
 			RunWithTimeOut(3,
 				chromedp.Tasks{
 					chromedp.Click(`.more`, chromedp.NodeVisible, chromedp.ByQuery),
-					fullscreen.FullScreenshot(1, &buf),
+
 				}),
 		)
 
@@ -69,10 +68,6 @@ func ParseFindList(urlStr string) string {
 		count++
 
 		if count > 52 {
-			if err := ioutil.WriteFile("BANelementScreenshot"+strconv.Itoa(count)+".png", buf, 0o644); err != nil {
-				log.Fatal(err)
-			}
-
 			log.Println("преывшено кол-во итераций перезагружаем страницу: ", urlStr)
 			err = chromedp.Run(ctx,
 				chromedp.Sleep(time.Millisecond*500),
