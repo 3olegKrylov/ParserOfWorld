@@ -36,6 +36,7 @@ func main() {
 		"https://www.tiktok.com/search?q=антон&lang=ru-RU",
 		"https://www.tiktok.com/search?q=марк&lang=ru-RU",
 		"https://www.tiktok.com/search?q=артём&lang=ru-RU",
+		"https://www.tiktok.com/search?q=бизнес&lang=ru-RU",
 	}
 
 	//подключение к clickhouse
