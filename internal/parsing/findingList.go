@@ -4,14 +4,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/chromedp/chromedp"
-	"github.com/testSpace/internal/fullscreen"
-	"io/ioutil"
 	"log"
 	"time"
 )
 
 func ParseFindList(urlStr string) string {
-	var buf []byte
 	var text string
 
 	ctx, cancel := chromedp.NewContext(
@@ -23,7 +20,6 @@ func ParseFindList(urlStr string) string {
 
 	err := chromedp.Run(ctx,
 		chromedp.Navigate(urlStr),
-		fullscreen.FullScreenshot(1, &buf),
 	)
 	if err != nil {
 		log.Fatal("Error Navigate Parsing Accounts to ", urlStr, "\nerror: ", err)
@@ -41,15 +37,12 @@ func ParseFindList(urlStr string) string {
 		return ""
 	}
 
-	if err := ioutil.WriteFile("elementScreenshotStart.png", buf, 0o644); err != nil {
-		log.Fatal(err)
-	}
-
 	// Рекурсивно, ждёт пока стрница прогрузится, проверяет существует ли кнопка ещё на стрнице, кликает при существовании, заканчивает при отсутствии.
 	log.Println("Начинаем прогружать страницу прогружаем страницу")
 	count := 0
 
 	siteIsParse := true
+	fmt.Println("прогружаем: ", urlStr)
 	for {
 		err = chromedp.Run(ctx,
 			RunWithTimeOut(3,
@@ -60,15 +53,13 @@ func ParseFindList(urlStr string) string {
 		)
 
 		if err != nil {
-			log.Println("ошибка выходим из for: ", err)
+			log.Println("прогрузили страницу", urlStr)
 			break
 		}
-
-		log.Println("Нашёл кнопку ещё и нажал:")
 		count++
 
 		if count > 52 {
-			log.Println("преывшено кол-во итераций перезагружаем страницу: ", urlStr)
+			log.Println("перезагружаем страницу: ", urlStr)
 			err = chromedp.Run(ctx,
 				chromedp.Sleep(time.Millisecond*500),
 			)
@@ -78,11 +69,10 @@ func ParseFindList(urlStr string) string {
 			break
 		}
 	}
-
+	//если распарсили страницу (т.е нашли и нажимали кнопки ещё пока их не стало)
 	if siteIsParse == false {
 		return text
 	} else {
-		fmt.Println("Прогурузили кнопки")
 
 		if err != nil && err.Error() != "context deadline exceeded" {
 			log.Println("Waiting and Clicking button error:", err)
@@ -94,11 +84,6 @@ func ParseFindList(urlStr string) string {
 
 		if err != nil {
 			log.Println(err)
-		}
-
-		// записываем данные в фотографию
-		if err := ioutil.WriteFile("elementScreenshot.png", buf, 0o644); err != nil {
-			log.Fatal(err)
 		}
 		return text
 	}

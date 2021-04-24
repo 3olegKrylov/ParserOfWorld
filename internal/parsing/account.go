@@ -6,9 +6,7 @@ import (
 	"github.com/ClickHouse/clickhouse-go"
 	chromedp "github.com/chromedp/chromedp"
 	"github.com/mcnijman/go-emailaddress"
-	"github.com/testSpace/internal/fullscreen"
 	"github.com/testSpace/model"
-	"io/ioutil"
 	"log"
 	"mvdan.cc/xurls/v2"
 	"regexp"
@@ -18,11 +16,13 @@ import (
 	"time"
 )
 
-func ParsingAccountData(nick string, ctx context.Context, id int32) model.UserData {
+func ParsingAccountData(nick string, ctx context.Context) model.UserData {
 	url := "https://www.tiktok.com/@" + nick
 
+	fmt.Println("1 ", url)
+
 	user := model.UserData{
-		Id:                id,
+		Id:                0,
 		LinkAccount:       url,
 		Title:             "",
 		SubTitle:          "",
@@ -54,18 +54,25 @@ func ParsingAccountData(nick string, ctx context.Context, id int32) model.UserDa
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println("Navigate to ", url)
 
+	fmt.Println("2 ", url)
+	//смотрим существует ли страница - если нет title значит страницы нет
 	userIsExist := ""
 	err = chromedp.Run(ctx, RunWithTimeOut(
 		1,
 		chromedp.Tasks{chromedp.Text(`.title`, &userIsExist, chromedp.NodeVisible, chromedp.ByQuery)},
 	))
 
-	if userIsExist == "Couldn't find this account" {
-		return model.UserData{}
+	fmt.Println("3 ", url)
+	//todo надо проверить правдали что если нет страницы то title будет такой
+	if userIsExist == "Couldn't find this account" || userIsExist == "Аккаунт не найден"{
+		fmt.Println("3* ", url, "не найден")
+		return user
 	}
+	fmt.Println("3 userIsExist: ", userIsExist, " ",url)
 	titleUser := ""
+
+	fmt.Println("4 ", url)
 	err = chromedp.Run(ctx,
 		chromedp.Text(`.share-title`, &titleUser, chromedp.NodeVisible, chromedp.ByQuery),
 		chromedp.Text(`.share-sub-title`, &user.SubTitle, chromedp.NodeVisible, chromedp.ByQuery),
@@ -75,18 +82,12 @@ func ParsingAccountData(nick string, ctx context.Context, id int32) model.UserDa
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	fmt.Println("5 ", url)
 	user.Title = strings.TrimSpace(titleUser)
-
-	checkClearAccount := ""
-	err = chromedp.Run(ctx, RunWithTimeOut(
-		1,
-		chromedp.Tasks{chromedp.Text(`.error-page`, &checkClearAccount, chromedp.NodeVisible, chromedp.ByQuery)},
-	))
-	fmt.Println(checkClearAccount)
 
 	user.Following, user.Followers, user.Likes = numericDataParser(numericData)
 
+	//проверяем существет ли ссылка у пользователя
 	linkOnTitile := ""
 	err = chromedp.Run(ctx, RunWithTimeOut(
 		1,
@@ -96,47 +97,56 @@ func ParsingAccountData(nick string, ctx context.Context, id int32) model.UserDa
 	if linkOnTitile != "" {
 		user.Links = linkOnTitile
 	}
+
+	fmt.Println("6 ", url)
+
 	moreLinks := ""
+
+	//если комментарий не пустой то распарсим всё что в нём есть
 	if user.Comment != "No bio yet." {
 		moreLinks, user.Phone, user.Instagram, user.Telegram, user.Mail = commentParser(user.Comment)
 	}
 
 	user.Links = user.Links + moreLinks
 
+	//проверяем есть ли посты у пользователя если там error-page то постов нет
+	checkClearAccount := ""
+	err = chromedp.Run(ctx, RunWithTimeOut(
+		1,
+		chromedp.Tasks{chromedp.Text(`.error-page`, &checkClearAccount, chromedp.NodeVisible, chromedp.ByQuery)},
+	))
 	//У пользователя нет контента
 	if checkClearAccount != "" {
 		return user
 	}
-
+	fmt.Println("7 ", url)
+	//Todo: записываем все лайки на карточках (чтобы записать все надо дождаться пока прогрузиться вся страница)
 	err = chromedp.Run(ctx,
 		chromedp.Text(`.tt-feed`, &likesCard, chromedp.NodeVisible, chromedp.ByQuery),
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	log.Println("Получили данные со страницы")
-
+	fmt.Println("8 ", url)
+	//TODO:логически если это будет ближе к началу
 	//при всплывающем модалке начинаем всё заново (пока её не станет)
 	for {
 		what := ""
 		err = chromedp.Run(ctx,
 			RunWithTimeOut(
-				3,
+				2,
 				chromedp.Tasks{chromedp.Text(`.iframe-container`, &what, chromedp.NodeVisible, chromedp.ByQuery),
-					//fullscreen.FullScreenshot(1, &buf),
 				},
 			),
 		)
 		if err != nil {
-			log.Println("Модальное окно исчесзло, смотрим первое видео", "\n", err)
 			break
 		} else {
-			log.Println("Перезагружаем cстраницу, из за модального окна ", what)
-			return ParsingAccountData(nick, ctx, id)
+			return ParsingAccountData(nick, ctx)
 		}
 	}
-	var buf []byte
+	fmt.Println("9 ", url)
+	//переходим по ссылке первого видео кликая на неё
 	for {
 		err = chromedp.Run(ctx,
 			RunWithTimeOut(1,
@@ -145,16 +155,10 @@ func ParsingAccountData(nick string, ctx context.Context, id int32) model.UserDa
 			))
 
 		if err == nil {
-			err = chromedp.Run(ctx, fullscreen.FullScreenshot(1, &buf))
-			if err := ioutil.WriteFile("ПерешлиВВидео.png", buf, 0o644); err != nil {
-				log.Fatal(err)
-			}
-
 			break
 		}
 	}
-
-	fmt.Println("перешли в видео")
+	fmt.Println("10 ", url)
 	for {
 		err = chromedp.Run(ctx,
 			RunWithTimeOut(1,
@@ -173,28 +177,23 @@ func ParsingAccountData(nick string, ctx context.Context, id int32) model.UserDa
 				1,
 				chromedp.Tasks{chromedp.Text(`.error-page`, &checkClearVideo, chromedp.NodeVisible, chromedp.ByQuery)},
 			),
-			fullscreen.FullScreenshot(1, &buf),
 		)
 
-		if err := ioutil.WriteFile("ИщемДату.png", buf, 0o644); err != nil {
-			log.Fatal(err)
-		}
-
 		if checkClearVideo != "" {
-
 			break
 		}
 
 	}
 
-	fmt.Println("likesCard: ", likesCard)
+	fmt.Println("11 ", url)
+
+	//парсим данные карточек
 	user.LastPostShowTotal, _, _, _ = parserCardShows(likesCard)
-	fmt.Println("parserCardShows end")
 	if ActionTime != "" {
 		user.LastActionTime = time.Time(lastActionTimeParser(ActionTime))
 	}
+	fmt.Println("12 ", url)
 	fmt.Println(user)
-
 	return user
 }
 
@@ -261,7 +260,7 @@ func numParser(num string) int32 {
 		num = strings.Replace(num, "M", "", -1)
 		val, err := strconv.ParseFloat(num, 32)
 		if err != nil {
-			log.Println("Не смогу распарсить данные в float32: ", num, "\n", err)
+			//log.Println("Не смогу распарсить данные в float32: ", num, "\n", err)
 			return -1
 		}
 		return int32(val * 1000000)
@@ -269,7 +268,7 @@ func numParser(num string) int32 {
 		num = strings.Replace(num, "K", "", -1)
 		val, err := strconv.ParseFloat(num, 32)
 		if err != nil {
-			log.Println("Не смогу распарсить данные в float32: ", num, "\n", err)
+			//log.Println("Не смогу распарсить данные в float32: ", num, "\n", err)
 			return -1
 		}
 		return int32(val * 1000)
@@ -277,7 +276,7 @@ func numParser(num string) int32 {
 	default:
 		val, err := strconv.ParseFloat(num, 32)
 		if err != nil {
-			log.Println("Не смогу распарсить данные в float32: ", num, "\n", err)
+			//log.Println("Не смогу распарсить данные в float32: ", num, "\n", err)
 			return -1
 		}
 		return int32(val)
@@ -357,10 +356,11 @@ func commentParser(comment string) (links string, phoneNum string, instagram str
 	//парсер для номеров
 	re := regexp.MustCompile(`^(?:(?:\(?(?:00|\+)([1-4]\d\d|[1-9]\d?)\)?)?[\-\.\ \\\/]?)?((?:\(?\d{1,}\)?[\-\.\ \\\/]?){0,})(?:[\-\.\ \\\/]?(?:#|ext\.?|extension|x)[\-\.\ \\\/]?(\d+))?$`)
 
-	fmt.Println("Words", words)
+	//fmt.Println("Words", words)
 	for num, value := range words {
+
 		//instagram
-		if value == "inst:" || value == "inst" || value == "instagram:" || value == "instagram" || value == "инст:" || value == "инст" || value == "инстаграм:" || value == "инстаграм" || value == "инста" || value == "инста:" || value == "инстаграмм:" || value == "инстаграмм" {
+		if value == "insta:" || value == "insta" || value == "inst:" || value == "inst" || value == "instagram:" || value == "instagram" || value == "инст:" || value == "инст" || value == "инстаграм:" || value == "инстаграм" || value == "инста" || value == "инста:" || value == "инстаграмм:" || value == "инстаграмм" || value == "ig" || value == "ig:" {
 			if len(words) >= num+2 {
 				if words[num+1] == "-" || words[num+1] == ":" {
 					if len(words) >= num+3 {
@@ -370,7 +370,10 @@ func commentParser(comment string) (links string, phoneNum string, instagram str
 					instagram += words[num+1] + " "
 				}
 			}
+		} else if strings.HasSuffix(value, "insta:") || strings.HasSuffix(value, "inst:") || strings.HasSuffix(value, "instagram:") || strings.HasSuffix(value, "инст:") || strings.HasSuffix(value, "инстаграм:") || strings.HasSuffix(value, "инста:") || strings.HasSuffix(value, "инстаграмм:") || strings.HasSuffix(value, "ig:") {
+			instagram += words[num] + " "
 		}
+
 		//phone
 		arrNumber := re.MatchString(value)
 		if arrNumber == true && value != "-" {
@@ -399,6 +402,8 @@ func commentParser(comment string) (links string, phoneNum string, instagram str
 					telegram += words[num+1] + " "
 				}
 			}
+		} else if strings.HasSuffix(value, "telegram:") || strings.HasSuffix(value, "tg:") || strings.HasSuffix(value, "телеграм:") || strings.HasSuffix(value, "тг:") || strings.HasSuffix(value, "телеграмм:") {
+			instagram += words[num] + " "
 		}
 
 	}
@@ -411,13 +416,6 @@ func commentParser(comment string) (links string, phoneNum string, instagram str
 	for _, e := range emails {
 		mail = mail + e.String() + ""
 	}
-
-	fmt.Println("comment: ", comment)
-	fmt.Println("linkes: ", links)
-	fmt.Println("number: ", phoneNum)
-	fmt.Println("instagram: ", instagram)
-	fmt.Println("telegram: ", telegram)
-	fmt.Println("mails: ", mail)
 
 	return links, phoneNum, instagram, telegram, mail
 }
