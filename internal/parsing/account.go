@@ -60,19 +60,25 @@ func ParsingAccountData(nick string, ctx context.Context) model.UserData {
 	userIsExist := ""
 	err = chromedp.Run(ctx, RunWithTimeOut(
 		1,
-		chromedp.Tasks{chromedp.Text(`.title`, &userIsExist, chromedp.NodeVisible, chromedp.ByQuery)},
+		chromedp.Tasks{chromedp.Text(`.share-title`, &userIsExist, chromedp.NodeVisible, chromedp.ByQuery)},
 	))
 
-	fmt.Println("3 ", url)
-	//todo надо проверить правдали что если нет страницы то title будет такой
-	if userIsExist == "Couldn't find this account" || userIsExist == "Аккаунт не найден"{
+
+	if userIsExist == ""{
 		fmt.Println("3* ", url, "не найден")
-		return user
+		err = chromedp.Run(ctx, RunWithTimeOut(
+			1,
+			chromedp.Tasks{chromedp.Sleep(time.Millisecond*200),
+				chromedp.Text(`.share-title`, &userIsExist, chromedp.NodeVisible, chromedp.ByQuery)},
+		))
+		if userIsExist == "" {
+			fmt.Println("3* ", url, "не найден - не существует")
+			return user
+		}
 	}
-	fmt.Println("3 userIsExist: ", userIsExist, " ",url)
+
 	titleUser := ""
 
-	fmt.Println("4 ", url)
 	err = chromedp.Run(ctx,
 		chromedp.Text(`.share-title`, &titleUser, chromedp.NodeVisible, chromedp.ByQuery),
 		chromedp.Text(`.share-sub-title`, &user.SubTitle, chromedp.NodeVisible, chromedp.ByQuery),
@@ -82,7 +88,6 @@ func ParsingAccountData(nick string, ctx context.Context) model.UserData {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("5 ", url)
 	user.Title = strings.TrimSpace(titleUser)
 
 	user.Following, user.Followers, user.Likes = numericDataParser(numericData)
@@ -97,8 +102,6 @@ func ParsingAccountData(nick string, ctx context.Context) model.UserData {
 	if linkOnTitile != "" {
 		user.Links = linkOnTitile
 	}
-
-	fmt.Println("6 ", url)
 
 	moreLinks := ""
 
@@ -119,7 +122,6 @@ func ParsingAccountData(nick string, ctx context.Context) model.UserData {
 	if checkClearAccount != "" {
 		return user
 	}
-	fmt.Println("7 ", url)
 	//Todo: записываем все лайки на карточках (чтобы записать все надо дождаться пока прогрузиться вся страница)
 	err = chromedp.Run(ctx,
 		chromedp.Text(`.tt-feed`, &likesCard, chromedp.NodeVisible, chromedp.ByQuery),
@@ -127,7 +129,6 @@ func ParsingAccountData(nick string, ctx context.Context) model.UserData {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("8 ", url)
 	//TODO:логически если это будет ближе к началу
 	//при всплывающем модалке начинаем всё заново (пока её не станет)
 	for {
@@ -145,7 +146,6 @@ func ParsingAccountData(nick string, ctx context.Context) model.UserData {
 			return ParsingAccountData(nick, ctx)
 		}
 	}
-	fmt.Println("9 ", url)
 	//переходим по ссылке первого видео кликая на неё
 	for {
 		err = chromedp.Run(ctx,
@@ -158,7 +158,7 @@ func ParsingAccountData(nick string, ctx context.Context) model.UserData {
 			break
 		}
 	}
-	fmt.Println("10 ", url)
+
 	for {
 		err = chromedp.Run(ctx,
 			RunWithTimeOut(1,
@@ -185,15 +185,12 @@ func ParsingAccountData(nick string, ctx context.Context) model.UserData {
 
 	}
 
-	fmt.Println("11 ", url)
-
 	//парсим данные карточек
 	user.LastPostShowTotal, _, _, _ = parserCardShows(likesCard)
 	if ActionTime != "" {
 		user.LastActionTime = time.Time(lastActionTimeParser(ActionTime))
 	}
 	fmt.Println("12 ", url)
-	fmt.Println(user)
 	return user
 }
 
