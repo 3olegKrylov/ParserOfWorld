@@ -16,7 +16,7 @@ import (
 
 func main() {
 
-	data, err := ioutil.ReadFile("cmd/name.txt")
+	data, err := ioutil.ReadFile("name.txt")
 
 	if err != nil {
 		fmt.Println(err)
