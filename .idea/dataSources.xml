@@ -31,11 +31,19 @@
       <jdbc-driver>ru.yandex.clickhouse.ClickHouseDriver</jdbc-driver>
       <jdbc-url>jdbc:clickhouse://localhost:8123</jdbc-url>
     </data-source>
+<<<<<<< HEAD
     <data-source source="LOCAL" name="@localhost [3]" uuid="cdef00a4-2072-4d61-abed-11550423817c">
       <driver-ref>clickhouse</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>ru.yandex.clickhouse.ClickHouseDriver</jdbc-driver>
       <jdbc-url>jdbc:clickhouse://localhost:8123</jdbc-url>
+=======
+    <data-source source="LOCAL" name="postgres@localhost" uuid="c14b1588-d531-4168-8423-9c1d49005769">
+      <driver-ref>postgresql</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.postgresql.Driver</jdbc-driver>
+      <jdbc-url>jdbc:postgresql://localhost:5432/postgres</jdbc-url>
+>>>>>>> d8894bd523b0dd40ba6a6fc18683467579164331
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
   </component>

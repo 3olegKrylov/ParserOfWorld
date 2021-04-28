@@ -62,6 +62,7 @@
       <secret-storage>master_key</secret-storage>
       <schema-mapping />
     </data-source>
+<<<<<<< HEAD
     <data-source name="@localhost [3]" uuid="cdef00a4-2072-4d61-abed-11550423817c">
       <database-info product="ClickHouse" version="21.3.2.5" jdbc-version="0.1" driver-name="ru.yandex.clickhouse-jdbc" driver-version="0.1" dbms="CLICKHOUSE" exact-version="21.3.2.5" exact-driver-version="0.1">
         <identifier-quote-string>`</identifier-quote-string>
@@ -73,6 +74,13 @@
           <node kind="schema" qname="@" />
         </introspection-scope>
       </schema-mapping>
+=======
+    <data-source name="postgres@localhost" uuid="c14b1588-d531-4168-8423-9c1d49005769">
+      <database-info product="" version="" jdbc-version="" driver-name="" driver-version="" dbms="POSTGRES" exact-version="0" />
+      <secret-storage>master_key</secret-storage>
+      <user-name>default</user-name>
+      <schema-mapping />
+>>>>>>> d8894bd523b0dd40ba6a6fc18683467579164331
     </data-source>
   </component>
 </project>
