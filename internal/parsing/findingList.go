@@ -8,15 +8,8 @@ import (
 	"time"
 )
 
-func ParseFindList(urlStr string) string {
+func ParseFindList(urlStr string, ctx context.Context) string {
 	var text string
-
-	ctx, cancel := chromedp.NewContext(
-		context.Background(),
-		chromedp.WithLogf(log.Printf),
-	)
-
-	defer cancel()
 
 	err := chromedp.Run(ctx,
 		chromedp.Navigate(urlStr),
@@ -64,7 +57,7 @@ func ParseFindList(urlStr string) string {
 				chromedp.Sleep(time.Millisecond*500),
 			)
 
-			text = ParseFindList(urlStr)
+			text = ParseFindList(urlStr, ctx)
 			siteIsParse = false
 			break
 		}
