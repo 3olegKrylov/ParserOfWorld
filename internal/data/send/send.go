@@ -19,7 +19,7 @@ func SendData(users []string, dbConnect *sql.DB, totalUsers *int32) []string {
 	var newUsers []string
 	sendWg := sync.WaitGroup{}
 
-	usersToSend := make(chan model.UserData, 7)
+	usersToSend := make(chan model.UserData, 6)
 
 	go func(ch chan model.UserData, totalUsers *int32) {
 		for {

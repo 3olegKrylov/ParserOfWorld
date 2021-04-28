@@ -58,7 +58,7 @@ func ParseFindList(urlStr string) string {
 		}
 		count++
 
-		if count > 52 {
+		if count > 70 {
 			log.Println("перезагружаем страницу: ", urlStr)
 			err = chromedp.Run(ctx,
 				chromedp.Sleep(time.Millisecond*500),

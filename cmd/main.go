@@ -5,6 +5,7 @@ import (
 	internal "github.com/testSpace/internal/data/send"
 	"github.com/testSpace/internal/db"
 	"github.com/testSpace/internal/parsing"
+	"io/ioutil"
 	"strings"
 	"time"
 
@@ -12,25 +13,34 @@ import (
 )
 
 func main() {
-	urlStr := []string{
-		//"https://www.tiktok.com/search?q=нутик&lang=ru-RU",
-		//"https://www.tiktok.com/search?q=анастэйша&lang=ru-RU",
-		//"https://www.tiktok.com/search?q=маша&lang=ru-RU",
-		//"https://www.tiktok.com/search?q=машуня&lang=ru-RU",
-		//"https://www.tiktok.com/search?q=мария&lang=ru-RU",
-		//"https://www.tiktok.com/search?q=мила&lang=ru-RU",
-		//"https://www.tiktok.com/search?q=милана&lang=ru-RU",
-		//"https://www.tiktok.com/search?q=подняла&lang=ru-RU",
-		//"https://www.tiktok.com/search?q=насосала&lang=ru-RU",
-		//"https://www.tiktok.com/search?q=инстасамка&lang=ru-RU",
-		//"https://www.tiktok.com/search?q=блогерша&lang=ru-RU",
-		//"https://www.tiktok.com/search?q=милиардерша&lang=ru-RU",
-		//"https://www.tiktok.com/search?q=миллионерша&lang=ru-RU",
-		//"https://www.tiktok.com/search?q=русская&lang=ru-RU",
-		//"https://www.tiktok.com/search?q=ксюша&lang=ru-RU",
-		//"https://www.tiktok.com/search?q=ксения&lang=ru-RU",
-		//"https://www.tiktok.com/search?q=инст&lang=ru-RU",
-		//"https://www.tiktok.com/search?q=инста&lang=ru-RU",
+
+	data, err := ioutil.ReadFile("cmd/name.txt")
+
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	urlStr := strings.Split(string(data), "\n")
+
+	_ = []string{
+		"https://www.tiktok.com/search?q=нутик&lang=ru-RU",
+		"https://www.tiktok.com/search?q=анастэйша&lang=ru-RU",
+		"https://www.tiktok.com/search?q=маша&lang=ru-RU",
+		"https://www.tiktok.com/search?q=машуня&lang=ru-RU",
+		"https://www.tiktok.com/search?q=мария&lang=ru-RU",
+		"https://www.tiktok.com/search?q=мила&lang=ru-RU",
+		"https://www.tiktok.com/search?q=милана&lang=ru-RU",
+		"https://www.tiktok.com/search?q=подняла&lang=ru-RU",
+		"https://www.tiktok.com/search?q=насосала&lang=ru-RU",
+		"https://www.tiktok.com/search?q=инстасамка&lang=ru-RU",
+		"https://www.tiktok.com/search?q=блогерша&lang=ru-RU",
+		"https://www.tiktok.com/search?q=милиардерша&lang=ru-RU",
+		"https://www.tiktok.com/search?q=миллионерша&lang=ru-RU",
+		"https://www.tiktok.com/search?q=русская&lang=ru-RU",
+		"https://www.tiktok.com/search?q=ксюша&lang=ru-RU",
+		"https://www.tiktok.com/search?q=ксения&lang=ru-RU",
+		"https://www.tiktok.com/search?q=инст&lang=ru-RU",
+		"https://www.tiktok.com/search?q=инста&lang=ru-RU",
 		"https://www.tiktok.com/search?q=катя&lang=ru-RU",
 		"https://www.tiktok.com/search?q=катюша&lang=ru-RU",
 		"https://www.tiktok.com/search?q=екатерина&lang=ru-RU",
@@ -50,7 +60,10 @@ func main() {
 		"https://www.tiktok.com/search?q=нюра&lang=ru-RU",
 		"https://www.tiktok.com/search?q=алёна&lang=ru-RU",
 		"https://www.tiktok.com/search?q=татьяна&lang=ru-RU",
-
+		"https://www.tiktok.com/search?q=татьяна&lang=ru-RU",
+		"https://www.tiktok.com/search?q=татьяна&lang=ru-RU",
+		"https://www.tiktok.com/search?q=татьяна&lang=ru-RU",
+		"https://www.tiktok.com/search?q=татьяна&lang=ru-RU",
 	}
 
 	//подключение к clickhouse
@@ -65,7 +78,13 @@ func main() {
 		//инициализация карты пользователей
 		userMap := db.InitUsers(dbConnect)
 		countOfUsers = int32(len(userMap))
-		text := parsing.ParseFindList(urlStr[i])
+
+		if urlStr[i]=="" ||urlStr[i]==" "{
+			continue
+		}
+		nameUser:=strings.TrimSpace(urlStr[i])
+
+		text := parsing.ParseFindList("https://www.tiktok.com/search?q=" + nameUser + "&lang=ru-RU")
 
 		lines := strings.Split(text, "\n\n")
 
@@ -87,5 +106,4 @@ func main() {
 	}
 
 	fmt.Println("Время: ", time.Since(start), " \nКол-во юзеров: ", countOfUsers)
-
 }

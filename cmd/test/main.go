@@ -2,50 +2,28 @@ package main
 
 import (
 	"fmt"
-	"sync"
+	"io/ioutil"
+	"strings"
 )
 
 func main() {
 
-	mesChan := make(chan int)
-
-	wg:= sync.WaitGroup{}
-	wg.Add(100)
-	go func(chan int) {
-		for {
-			res := <-mesChan
-			fmt.Println("First gorutine handle: ", res)
-
-			wg.Done()
-		}
-	}(mesChan)
-
-	go func(chan int) {
-		for {
-			res := <-mesChan
-			fmt.Println("Second gorutine handle: ", res)
-
-			wg.Done()
-		}
-	}(mesChan)
-
-	go func(chan int) {
-		for {
-			res := <-mesChan
-			fmt.Println("Third gorutine handle: ", res)
-
-			wg.Done()
-		}
-	}(mesChan)
-
-
-	for i:=0 ; i<100; i++{
-		mesChan <- i
-		fmt.Println("записал ", i)
+	// Зачитываем содержимое файла
+	data, err := ioutil.ReadFile("cmd/name.txt")
+	// Если во время считывания файла произошла ошибка
+	// выводим ее
+	if err != nil {
+		fmt.Println(err)
 	}
 
-	wg.Wait()
 
+	// Если чтение данных прошло успено
+	// выводим их в консоль
+	fmt.Print(string(data))
+
+	nameArr := strings.Split(string(data),"\n")
+	fmt.Println(nameArr)
+	fmt.Println(len(nameArr))
 	//wg:= sync.WaitGroup{}
 	//wg.Add(1000)
 	//
