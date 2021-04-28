@@ -19,7 +19,7 @@ type User struct {
 
 //Открывает базу данных и проверяет работоспособность
 func DBconnect() *sql.DB {
-	connect, err := sql.Open("clickhouse", "tcp://127.0.0.1:9000?debug=true")
+	connect, err := sql.Open("clickhouse", "tcp://65.21.53.188:9000?debug=true")
 	if err != nil {
 		log.Fatal(err)
 	}

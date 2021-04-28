@@ -17,6 +17,7 @@ import (
 )
 
 func ParsingAccountData(nick string, ctx context.Context) model.UserData {
+	start:= time.Now()
 	url := "https://www.tiktok.com/@" + nick
 
 	fmt.Println("1 ", url)
@@ -51,41 +52,60 @@ func ParsingAccountData(nick string, ctx context.Context) model.UserData {
 	err := chromedp.Run(ctx,
 		chromedp.Navigate(url),
 	)
+
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err, "navigate", url)
+		return user
 	}
 
-	fmt.Println("2 ", url)
 	//смотрим существует ли страница - если нет title значит страницы нет
 	userIsExist := ""
 	err = chromedp.Run(ctx, RunWithTimeOut(
-		1,
-		chromedp.Tasks{chromedp.Text(`.title`, &userIsExist, chromedp.NodeVisible, chromedp.ByQuery)},
+		2,
+		chromedp.Tasks{chromedp.Text(`.share-title`, &userIsExist, chromedp.NodeVisible, chromedp.ByQuery)},
 	))
-
-	fmt.Println("3 ", url)
-	//todo надо проверить правдали что если нет страницы то title будет такой
-	if userIsExist == "Couldn't find this account" || userIsExist == "Аккаунт не найден"{
-		fmt.Println("3* ", url, "не найден")
+	if err != nil {
+		log.Println("не нашли title на странице - т.е её не существует", url)
 		return user
 	}
-	fmt.Println("3 userIsExist: ", userIsExist, " ",url)
-	titleUser := ""
 
-	fmt.Println("4 ", url)
+	//при всплывающем модалке начинаем всё заново (пока её не станет)
+	for {
+		what := ""
+		err = chromedp.Run(ctx,
+			RunWithTimeOut(
+				2,
+				chromedp.Tasks{chromedp.Text(`.iframe-container`, &what, chromedp.NodeVisible, chromedp.ByQuery),
+				},
+			),
+		)
+		if err != nil {
+			break
+		} else {
+			log.Println("перезагружаем страницу из-за модалки", url)
+			return ParsingAccountData(nick, ctx)
+		}
+	}
+
+	titleUser := ""
 	err = chromedp.Run(ctx,
-		chromedp.Text(`.share-title`, &titleUser, chromedp.NodeVisible, chromedp.ByQuery),
-		chromedp.Text(`.share-sub-title`, &user.SubTitle, chromedp.NodeVisible, chromedp.ByQuery),
-		chromedp.Text(`.share-desc`, &user.Comment, chromedp.NodeVisible, chromedp.ByQuery),
-		chromedp.Text(`.count-infos`, &numericData, chromedp.NodeVisible, chromedp.ByQuery),
+		RunWithTimeOut(4, chromedp.Tasks{
+			chromedp.Text(`.share-title`, &titleUser, chromedp.NodeVisible, chromedp.ByQuery),
+			chromedp.Text(`.share-sub-title`, &user.SubTitle, chromedp.NodeVisible, chromedp.ByQuery),
+			chromedp.Text(`.share-desc`, &user.Comment, chromedp.NodeVisible, chromedp.ByQuery),
+			chromedp.Text(`.count-infos`, &numericData, chromedp.NodeVisible, chromedp.ByQuery)}),
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(url, "чего-то не нашли: titleUser: ", titleUser, " user.SubTitle:",user.SubTitle, " user.Comment:", user.Comment, "numericData:", numericData )
+		if titleUser == "" || numericData==""{
+			log.Println(url, "нет title или числовых данных")
+			return user
+		}
 	}
-	fmt.Println("5 ", url)
-	user.Title = strings.TrimSpace(titleUser)
 
+	user.Title = strings.TrimSpace(titleUser)
 	user.Following, user.Followers, user.Likes = numericDataParser(numericData)
+
 
 	//проверяем существет ли ссылка у пользователя
 	linkOnTitile := ""
@@ -94,16 +114,20 @@ func ParsingAccountData(nick string, ctx context.Context) model.UserData {
 		chromedp.Tasks{chromedp.Text(`.share-links`, &linkOnTitile, chromedp.NodeVisible, chromedp.ByQuery)},
 	))
 
+
 	if linkOnTitile != "" {
 		user.Links = linkOnTitile
 	}
 
-	fmt.Println("6 ", url)
+	if linkOnTitile != "" && err != nil{
+		log.Println(url, "ничего не нашёл, но ссылка какая-то есть - ", linkOnTitile)
+	}
+
 
 	moreLinks := ""
 
 	//если комментарий не пустой то распарсим всё что в нём есть
-	if user.Comment != "No bio yet." {
+	if user.Comment != "No bio yet." && user.Comment != "" && user.Comment != "Нет описания." {
 		moreLinks, user.Phone, user.Instagram, user.Telegram, user.Mail = commentParser(user.Comment)
 	}
 
@@ -119,33 +143,17 @@ func ParsingAccountData(nick string, ctx context.Context) model.UserData {
 	if checkClearAccount != "" {
 		return user
 	}
-	fmt.Println("7 ", url)
+
 	//Todo: записываем все лайки на карточках (чтобы записать все надо дождаться пока прогрузиться вся страница)
 	err = chromedp.Run(ctx,
-		chromedp.Text(`.tt-feed`, &likesCard, chromedp.NodeVisible, chromedp.ByQuery),
-	)
+		RunWithTimeOut(1, chromedp.Tasks{
+		chromedp.Text(`.tt-feed`, &likesCard, chromedp.NodeVisible, chromedp.ByQuery)}))
 	if err != nil {
-		log.Fatal(err)
+		log.Println(url, "нет контента")
 	}
-	fmt.Println("8 ", url)
+
 	//TODO:логически если это будет ближе к началу
-	//при всплывающем модалке начинаем всё заново (пока её не станет)
-	for {
-		what := ""
-		err = chromedp.Run(ctx,
-			RunWithTimeOut(
-				2,
-				chromedp.Tasks{chromedp.Text(`.iframe-container`, &what, chromedp.NodeVisible, chromedp.ByQuery),
-				},
-			),
-		)
-		if err != nil {
-			break
-		} else {
-			return ParsingAccountData(nick, ctx)
-		}
-	}
-	fmt.Println("9 ", url)
+
 	//переходим по ссылке первого видео кликая на неё
 	for {
 		err = chromedp.Run(ctx,
@@ -158,7 +166,8 @@ func ParsingAccountData(nick string, ctx context.Context) model.UserData {
 			break
 		}
 	}
-	fmt.Println("10 ", url)
+
+	//забираем время последнего сообщения
 	for {
 		err = chromedp.Run(ctx,
 			RunWithTimeOut(1,
@@ -185,14 +194,14 @@ func ParsingAccountData(nick string, ctx context.Context) model.UserData {
 
 	}
 
-	fmt.Println("11 ", url)
+
 
 	//парсим данные карточек
 	user.LastPostShowTotal, _, _, _ = parserCardShows(likesCard)
 	if ActionTime != "" {
 		user.LastActionTime = time.Time(lastActionTimeParser(ActionTime))
 	}
-	fmt.Println("12 ", url)
+	fmt.Println(time.Since(start), url)
 	fmt.Println(user)
 	return user
 }
@@ -255,6 +264,9 @@ func numericDataParser(data string) (countFollowing int32, countFollowers int32,
 //перевдит строки вида 21.2M в 21200000 и 21.1K в 21100 вернёт -1 если не смогу распарсить
 func numParser(num string) int32 {
 	num = strings.TrimSpace(num)
+	if len(num) < 1 {
+		return -1
+	}
 	switch num[(len(num) - 1):] {
 	case "M":
 		num = strings.Replace(num, "M", "", -1)

@@ -20,6 +20,7 @@ func SendData(users []string, dbConnect *sql.DB, totalUsers *int32) []string {
 	sendWg := sync.WaitGroup{}
 
 	usersToSend := make(chan model.UserData, 7)
+
 	go func(ch chan model.UserData, totalUsers *int32) {
 		for {
 			user := <-ch
@@ -39,35 +40,37 @@ func SendData(users []string, dbConnect *sql.DB, totalUsers *int32) []string {
 
 	}(usersToSend, totalUsers)
 
-	userWg := sync.WaitGroup{}
-	for num, value := range users {
-		userWg.Add(1)
-		userParse := value
+	usersChan := make(chan string, 6)
 
-		go func(userParse string) {
+	for i := 0; i < 6; i++ {
+		go func(chan string) {
 			ctx, cancel := chromedp.NewContext(
 				context.Background(),
 				chromedp.WithLogf(log.Printf),
 			)
 			defer cancel()
 
-			user := parsing.ParsingAccountData(userParse, ctx)
-			if user.Title != "" {
-				usersToSend <- user
-				fmt.Println("Спарсил - Name:", user.Title, "\nID:", user.Id)
+			for {
+				userNick := <-usersChan
+
+				user := parsing.ParsingAccountData(userNick, ctx)
+				if user.Title != "" {
+					usersToSend <- user
+					fmt.Println("Спарсил - Name:", user.Title)
+				}
+
 			}
-			userWg.Done()
-		}(userParse)
 
-		if num%6 == 0 && num != 0 {
-			userWg.Wait()
-		}
-
+		}(usersChan)
 	}
 
-	userWg.Wait()
-	fmt.Println("Пользоавтелей парсить закончил")
 
+	for num, value := range users {
+		usersChan <- value
+		fmt.Println(num, "аккаунт из", len(users))
+	}
+
+	fmt.Println("Пользоавтелей парсить закончил")
 	sendWg.Wait()
 
 	fmt.Println("Обработал: ", *totalUsers-zeroUser, " userов || За Время:", time.Since(start))
