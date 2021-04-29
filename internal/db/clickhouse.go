@@ -100,10 +100,10 @@ func DBAddUser(user model.UserData, connect *sql.DB) {
 
 }
 
-func InitUsers(connect *sql.DB) map[string]int32 {
+func InitUsers(connect *sql.DB) int32 {
 	usersMap := make(map[string]int32)
 
-	rows, err := connect.Query("SELECT Id, Title FROM default.Users")
+	rows, err := connect.Query("SELECT Id, Title FROM default.Users ")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -133,5 +133,30 @@ func InitUsers(connect *sql.DB) map[string]int32 {
 		log.Fatal(err)
 	}
 
-	return usersMap
+	return int32(len(usersMap))
+}
+
+//возвращает true если существует данный user иначе false
+func FindUserDB(connect *sql.DB, nick string) bool {
+
+	rows, err := connect.Query("SELECT Title FROM default.Users WHERE Title = ?", nick)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var (
+			comment string
+		)
+		if err := rows.Scan(&comment); err != nil {
+			log.Fatal(err)
+		}
+		if comment == nick{
+			return true
+		}
+	}
+
+	return false
+
 }

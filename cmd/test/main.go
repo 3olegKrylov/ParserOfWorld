@@ -1,24 +1,17 @@
 package main
 
 import (
-	"context"
-	"github.com/chromedp/chromedp"
-	"log"
+	"fmt"
+	"github.com/testSpace/internal/db"
 )
 
 func main() {
 
-	// create chrome instance
-	ctx, _ :=  chromedp.NewContext(
-		context.Background(),
-		chromedp.WithLogf(log.Printf),
-	)
+	dbConnect := db.DBconnect()
+	db.DBinit(dbConnect)
+	defer dbConnect.Close()
 
-	err := chromedp.Run(ctx,
-		chromedp.Navigate(`https://golang.org/pkg/time/`))
-	if err != nil {
-		log.Fatal(err)
-	}
+	fmt.Println(db.FindUserDB(dbConnect, "nargissa28048330"))
 
 }
 

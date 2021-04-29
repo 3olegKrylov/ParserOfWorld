@@ -15,6 +15,7 @@ import (
 )
 
 func main() {
+
 	data, err := ioutil.ReadFile("cmd/name.txt")
 
 	if err != nil {
@@ -35,20 +36,17 @@ func main() {
 		chromedp.WithLogf(log.Printf),
 	)
 
-
 	defer cancel()
+	countOfUsers = db.InitUsers(dbConnect)
+
 
 	//парсинг аккаунтов
 	for i := 0; i < len(urlStr); i++ {
 		//инициализация карты пользователей
-		userMap := db.InitUsers(dbConnect)
-		countOfUsers = int32(len(userMap))
 
 		if urlStr[i]=="" || urlStr[i]==" "{
 			continue
 		}
-
-
 
 		nameUser:=strings.TrimSpace(urlStr[i])
 
@@ -60,7 +58,7 @@ func main() {
 
 		for num, value := range lines {
 			if strings.HasSuffix(value, "Подписчики") {
-				_, ok := userMap[strings.TrimSpace(lines[num-1])]
+				ok := db.FindUserDB(dbConnect,strings.TrimSpace(lines[num-1]))
 				if !ok {
 					newUsers = append(newUsers, lines[num-1])
 				}
