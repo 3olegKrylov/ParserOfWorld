@@ -15,8 +15,7 @@ import (
 )
 
 func main() {
-
-	data, err := ioutil.ReadFile("name.txt")
+	data, err := ioutil.ReadFile("cmd/name.txt")
 
 	if err != nil {
 		fmt.Println(err)
@@ -35,6 +34,7 @@ func main() {
 		context.Background(),
 		chromedp.WithLogf(log.Printf),
 	)
+
 
 	defer cancel()
 
