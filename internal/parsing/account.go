@@ -192,6 +192,7 @@ func ParsingAccountData(nick string, ctx context.Context) model.UserData {
 			break
 		}
 
+
 	}
 
 

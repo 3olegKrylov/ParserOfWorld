@@ -2,16 +2,27 @@ package main
 
 import (
 	"fmt"
-	"github.com/testSpace/internal/db"
+	"time"
 )
 
 func main() {
 
-	dbConnect := db.DBconnect()
-	db.DBinit(dbConnect)
-	defer dbConnect.Close()
+	chanUser:=make(chan string, 4)
 
-	fmt.Println(db.FindUserDB(dbConnect, "nargissa28048330"))
+	go func() {
+		for{
+			time.Sleep(time.Second * 1)
+			fmt.Println(<-chanUser)
+
+		}	}()
+
+	countSend:=0
+	for{
+		countSend++
+		chanUser<-"message"
+		fmt.Println("send the ", countSend, "message")
+	}
+
 
 }
 
