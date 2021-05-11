@@ -345,6 +345,7 @@ func commentParser(comment string) (links string, phoneNum string, instagram str
 	relUrl := rxRelaxed.FindString(comment)
 
 	rxStrict := xurls.Strict()
+
 	linksArr := rxStrict.FindAllString(comment, -1)
 
 	for _, l := range linksArr {

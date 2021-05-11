@@ -6,6 +6,8 @@ import (
 	"log"
 )
 
+var Connect *sql.DB
+
 type User struct {
 	Id        int32
 	Title     string
@@ -18,7 +20,7 @@ type User struct {
 }
 
 //Открывает базу данных и проверяет работоспособность
-func DBconnect() *sql.DB {
+func DBconnect(){
 	connect, err := sql.Open("clickhouse", "tcp://65.21.53.188:9000?debug=true")
 	if err != nil {
 		log.Fatal(err)
@@ -27,17 +29,17 @@ func DBconnect() *sql.DB {
 	if err := connect.Ping(); err != nil {
 		log.Fatal(err)
 	}
-
-	return connect
+	Connect = connect
 }
 
-func DBinit(connect *sql.DB) {
-	if _, err := connect.Exec(`
+func DBinit() {
+	if _, err := Connect.Exec(`
 		CREATE TABLE IF NOT EXISTS default.Users(
 			Id 			  	  Nullable(Int32),
 			LinkAccount	      Nullable(String),    
 			Title 		      Nullable(String),
-			SubTitle 		  Nullable(String),
+			SubTitle 		
+		    Nullable(String),
 			Comment 		  Nullable(String), 
 			Mail   			  Nullable(String),
 			Telegram          Nullable(String),
@@ -61,12 +63,12 @@ func DBinit(connect *sql.DB) {
 
 }
 
-func DBAddUser(user model.UserData, connect *sql.DB) {
+
+func DBAddUser(user model.UserData) {
 	var (
-		tx, _   = connect.Begin()
+		tx, _   = Connect.Begin()
 		stmt, _ = tx.Prepare("INSERT INTO default.Users (Id,LinkAccount,Title,SubTitle,Comment,Mail,Telegram,Instagram,Links,LanguageAccount,Phone,Following,Followers,Likes,LastPostShowTotal,AverageShows,MedianShows,TotalPosts,LastActionTime,ParsingTime) VAlUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 	)
-
 	defer stmt.Close()
 
 	if _, err := stmt.Exec(
@@ -93,17 +95,12 @@ func DBAddUser(user model.UserData, connect *sql.DB) {
 	); err != nil {
 		log.Fatal(err)
 	}
-
-	if err := tx.Commit(); err != nil {
-		log.Fatal(err)
-	}
-
 }
 
-func InitUsers(connect *sql.DB) int32 {
+func InitUsers() int32 {
 	usersMap := make(map[string]int32)
 
-	rows, err := connect.Query("SELECT Id, Title FROM default.Users ")
+	rows, err := Connect.Query("SELECT Id, Title FROM default.Users ")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -137,9 +134,9 @@ func InitUsers(connect *sql.DB) int32 {
 }
 
 //возвращает true если существует данный user иначе false
-func FindUserDB(connect *sql.DB, nick string) bool {
+func FindUserDB( nick string) bool {
 
-	rows, err := connect.Query("SELECT Title FROM default.Users WHERE Title = ?", nick)
+	rows, err := Connect.Query("SELECT Title FROM default.Users WHERE Title = ?", nick)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -25,23 +25,24 @@ func main() {
 	data, err := ioutil.ReadFile("cmd/name.txt")
 	internal.UsersToSend = make(chan model.UserData, 6)
 
+
 	if err != nil {
 		fmt.Println(err)
 	}
 
 	//подключение к clickhouse
-	dbConnect := db.DBconnect()
-	db.DBinit(dbConnect)
-	defer dbConnect.Close()
+	db.DBconnect()
+	db.DBinit()
+	defer db.Connect.Close()
 
 	urlStr := strings.Split(string(data), "\n")
 
 
 	countOfUsers := int32(0)
-	countOfUsers = db.InitUsers(dbConnect)
+	countOfUsers = db.InitUsers()
 	startCountOfUsers := countOfUsers
 
-	internal.UsersSendHanler(internal.UsersToSend, &countOfUsers, dbConnect)
+	internal.UsersSendHanler(internal.UsersToSend, &countOfUsers, db.Connect)
 	internal.SendDataHandlers(2)
 
 	start := time.Now()
@@ -55,6 +56,10 @@ func main() {
 
 	sendingUsers:= 0
 	//парсинг аккаунтов
+	var text string
+	var lines[] string
+	var ok bool
+
 	for i := 0; i < len(urlStr); i++ {
 		//инициализация карты пользователей
 
@@ -64,21 +69,19 @@ func main() {
 
 		nameUser := strings.TrimSpace(urlStr[i])
 
-		text := parsing.ParseFindList("https://www.tiktok.com/search?q="+nameUser+"&lang=ru-RU", ctx)
-		lines := strings.Split(text, "\n\n")
+		text = parsing.ParseFindList("https://www.tiktok.com/search?q="+nameUser+"&lang=ru-RU", ctx)
+		lines = strings.Split(text, "\n\n")
 
 
 		for num, value := range lines {
 			if strings.HasSuffix(value, "Подписчики") {
-				ok := db.FindUserDB(dbConnect, strings.TrimSpace(lines[num-1]))
+				ok = db.FindUserDB(strings.TrimSpace(lines[num-1]))
 				if !ok {
 					internal.UsersChan <- strings.TrimSpace(lines[num-1])
 					sendingUsers++
 				}
 			}
 		}
-
-
 
 		fmt.Println("закончил отправлять ", urlStr[i])
 		time.Sleep(time.Millisecond * 200)
