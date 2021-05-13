@@ -2,7 +2,6 @@ package internal
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"github.com/chromedp/chromedp"
 	"github.com/testSpace/internal/db"
@@ -15,7 +14,7 @@ var UsersToSend chan model.UserData
 var UsersChan chan string
 
 //sener users to DB включать в gorutine
-func UsersSendHanler(ch chan model.UserData, totalUsers *int32, dbConnect *sql.DB) {
+func UsersSendHanler(ch chan model.UserData, totalUsers *int32) {
 	go func() {
 		user := model.UserData{}
 		for {

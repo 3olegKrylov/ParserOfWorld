@@ -42,7 +42,7 @@ func main() {
 	countOfUsers = db.InitUsers()
 	startCountOfUsers := countOfUsers
 
-	internal.UsersSendHanler(internal.UsersToSend, &countOfUsers, db.Connect)
+	internal.UsersSendHanler(internal.UsersToSend, &countOfUsers)
 	internal.SendDataHandlers(2)
 
 	start := time.Now()

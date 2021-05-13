@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/testSpace/model"
 	"log"
 )
@@ -20,8 +21,8 @@ type User struct {
 }
 
 //Открывает базу данных и проверяет работоспособность
-func DBconnect(){
-	connect, err := sql.Open("clickhouse", "tcp://65.21.53.188:9000?debug=true")
+func DBconnect() {
+	connect, err := sql.Open("clickhouse", "tcp://65.21.53.188:9000")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -63,12 +64,13 @@ func DBinit() {
 
 }
 
-
 func DBAddUser(user model.UserData) {
+
 	var (
-		tx, _   = Connect.Begin()
-		stmt, _ = tx.Prepare("INSERT INTO default.Users (Id,LinkAccount,Title,SubTitle,Comment,Mail,Telegram,Instagram,Links,LanguageAccount,Phone,Following,Followers,Likes,LastPostShowTotal,AverageShows,MedianShows,TotalPosts,LastActionTime,ParsingTime) VAlUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+		Tx, _   = Connect.Begin()
+		stmt, _ = Tx.Prepare("INSERT INTO default.Users (Id,LinkAccount,Title,SubTitle,Comment,Mail,Telegram,Instagram,Links,LanguageAccount,Phone,Following,Followers,Likes,LastPostShowTotal,AverageShows,MedianShows,TotalPosts,LastActionTime,ParsingTime) VAlUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 	)
+
 	defer stmt.Close()
 
 	if _, err := stmt.Exec(
@@ -93,6 +95,11 @@ func DBAddUser(user model.UserData) {
 		user.LastActionTime,
 		user.ParsingTime,
 	); err != nil {
+		log.Fatal(err)
+	}
+
+	err := Tx.Commit()
+	if err != nil {
 		log.Fatal(err)
 	}
 }
@@ -134,7 +141,7 @@ func InitUsers() int32 {
 }
 
 //возвращает true если существует данный user иначе false
-func FindUserDB( nick string) bool {
+func FindUserDB(nick string) bool {
 
 	rows, err := Connect.Query("SELECT Title FROM default.Users WHERE Title = ?", nick)
 	if err != nil {
@@ -149,7 +156,7 @@ func FindUserDB( nick string) bool {
 		if err := rows.Scan(&comment); err != nil {
 			log.Fatal(err)
 		}
-		if comment == nick{
+		if comment == nick {
 			return true
 		}
 	}
