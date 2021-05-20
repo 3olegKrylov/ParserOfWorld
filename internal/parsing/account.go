@@ -16,13 +16,13 @@ import (
 	"time"
 )
 
-func ParsingAccountData(nick string, ctx context.Context) model.UserData {
-	start:= time.Now()
+func ParsingAccountData(nick string, user model.UserData, ctx context.Context) model.UserData {
+
 	url := "https://www.tiktok.com/@" + nick
 
 	fmt.Println("1 ", url)
 
-	user := model.UserData{
+	user = model.UserData{
 		Id:                0,
 		LinkAccount:       url,
 		Title:             "",
@@ -83,7 +83,7 @@ func ParsingAccountData(nick string, ctx context.Context) model.UserData {
 			break
 		} else {
 			log.Println("перезагружаем страницу из-за модалки", url)
-			return ParsingAccountData(nick, ctx)
+			return ParsingAccountData(nick, user, ctx)
 		}
 	}
 
@@ -96,8 +96,8 @@ func ParsingAccountData(nick string, ctx context.Context) model.UserData {
 			chromedp.Text(`.count-infos`, &numericData, chromedp.NodeVisible, chromedp.ByQuery)}),
 	)
 	if err != nil {
-		log.Println(url, "чего-то не нашли: titleUser: ", titleUser, " user.SubTitle:",user.SubTitle, " user.Comment:", user.Comment, "numericData:", numericData )
-		if titleUser == "" || numericData==""{
+		log.Println(url, "чего-то не нашли: titleUser: ", titleUser, " user.SubTitle:", user.SubTitle, " user.Comment:", user.Comment, "numericData:", numericData)
+		if titleUser == "" || numericData == "" {
 			log.Println(url, "нет title или числовых данных")
 			return user
 		}
@@ -106,7 +106,6 @@ func ParsingAccountData(nick string, ctx context.Context) model.UserData {
 	user.Title = strings.TrimSpace(titleUser)
 	user.Following, user.Followers, user.Likes = numericDataParser(numericData)
 
-
 	//проверяем существет ли ссылка у пользователя
 	linkOnTitile := ""
 	err = chromedp.Run(ctx, RunWithTimeOut(
@@ -114,15 +113,13 @@ func ParsingAccountData(nick string, ctx context.Context) model.UserData {
 		chromedp.Tasks{chromedp.Text(`.share-links`, &linkOnTitile, chromedp.NodeVisible, chromedp.ByQuery)},
 	))
 
-
 	if linkOnTitile != "" {
 		user.Links = linkOnTitile
 	}
 
-	if linkOnTitile != "" && err != nil{
+	if linkOnTitile != "" && err != nil {
 		log.Println(url, "ничего не нашёл, но ссылка какая-то есть - ", linkOnTitile)
 	}
-
 
 	moreLinks := ""
 
@@ -147,7 +144,7 @@ func ParsingAccountData(nick string, ctx context.Context) model.UserData {
 	//Todo: записываем все лайки на карточках (чтобы записать все надо дождаться пока прогрузиться вся страница)
 	err = chromedp.Run(ctx,
 		RunWithTimeOut(1, chromedp.Tasks{
-		chromedp.Text(`.tt-feed`, &likesCard, chromedp.NodeVisible, chromedp.ByQuery)}))
+			chromedp.Text(`.tt-feed`, &likesCard, chromedp.NodeVisible, chromedp.ByQuery)}))
 	if err != nil {
 		log.Println(url, "нет контента")
 	}
@@ -192,18 +189,15 @@ func ParsingAccountData(nick string, ctx context.Context) model.UserData {
 			break
 		}
 
-
 	}
-
-
 
 	//парсим данные карточек
 	user.LastPostShowTotal, _, _, _ = parserCardShows(likesCard)
 	if ActionTime != "" {
 		user.LastActionTime = time.Time(lastActionTimeParser(ActionTime))
 	}
-	fmt.Println(time.Since(start), url)
-	fmt.Println(user)
+	//fmt.Println(time.Since(start), url)
+	//fmt.Println(user)
 	return user
 }
 
@@ -304,7 +298,7 @@ func lastActionTimeParser(data string) clickhouse.Date {
 	dataArr := strings.Split(data, "·")
 	resStr := strings.TrimSpace(dataArr[1])
 
-	fmt.Println(resStr)
+	//fmt.Println(resStr)
 	dataType := strings.Split(resStr, "-")
 
 	if strings.Contains(dataType[0], " ") {
@@ -322,8 +316,7 @@ func lastActionTimeParser(data string) clickhouse.Date {
 		}
 		return clickhouse.Date(time.Date(year, month, day, 0, 0, 0, 0, time.Local))
 	} else {
-		fmt.Println(dataType)
-		fmt.Println(len(dataType))
+
 		countMonth, err := strconv.Atoi(dataType[1])
 
 		month := time.Month(countMonth)

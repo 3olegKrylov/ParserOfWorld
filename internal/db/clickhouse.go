@@ -22,7 +22,7 @@ type User struct {
 
 //Открывает базу данных и проверяет работоспособность
 func DBconnect() {
-	connect, err := sql.Open("clickhouse", "tcp://65.21.53.188:9000")
+	connect, err := sql.Open("mysql", "oleg:1@tcp(65.21.53.188:3306)/tiktok")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -34,30 +34,55 @@ func DBconnect() {
 }
 
 func DBinit() {
+	//if _, err := Connect.Exec(`
+	//	CREATE TABLE IF NOT EXISTS tiktok.Users(
+	//		'Id' 			  	  Nullable(Int32),
+	//		LinkAccount	      Nullable(String),
+	//		Title 		      Nullable(String),
+	//		SubTitle 		  Nullable(String),
+	//		Comment 		  Nullable(String),
+	//		Mail   			  Nullable(String),
+	//		Telegram          Nullable(String),
+	//		Instagram         Nullable(String),
+	//		Links             Nullable(String),
+	//		LanguageAccount   Nullable(String),
+	//		Phone			  Nullable(String),
+	//		Following         Nullable(Int32),
+	//		Followers         Nullable(Int32),
+	//		Likes             Nullable(Int32),
+	//		LastPostShowTotal Nullable(Int32),
+	//		AverageShows      Nullable(Int32),
+	//		MedianShows       Nullable(Int32),
+	//		TotalPosts        Nullable(Int32),
+	//		LastActionTime    Nullable(DateTime),
+	//		ParsingTime       Nullable(DateTime)
+	//	) engine=Memory`); err != nil {
+	//	log.Print("DB is no Iinit", err)
+	//
 	if _, err := Connect.Exec(`
-		CREATE TABLE IF NOT EXISTS default.Users(
-			Id 			  	  Nullable(Int32),
-			LinkAccount	      Nullable(String),    
-			Title 		      Nullable(String),
-			SubTitle 		
-		    Nullable(String),
-			Comment 		  Nullable(String), 
-			Mail   			  Nullable(String),
-			Telegram          Nullable(String),
-			Instagram         Nullable(String),
-			Links             Nullable(String),
-			LanguageAccount   Nullable(String),
-			Phone			  Nullable(String),
-			Following         Nullable(Int32),
-			Followers         Nullable(Int32),
-			Likes             Nullable(Int32),
-			LastPostShowTotal Nullable(Int32),
-			AverageShows      Nullable(Int32),
-			MedianShows       Nullable(Int32),
-			TotalPosts        Nullable(Int32),
-			LastActionTime    Nullable(DateTime),
-			ParsingTime       Nullable(DateTime)
-		) engine=Memory`); err != nil {
+		CREATE TABLE IF NOT EXISTS Users
+(
+    Id                INT AUTO_INCREMENT NOT NULL PRIMARY KEY,
+    LinkAccount       TEXT               NOT NULL,
+    Title             CHAR(50)           NOT NULL UNIQUE,
+    SubTitle          TEXT               NULL,
+    Comment           TEXT               NULL,
+    Mail              TEXT               NULL,
+    Telegram          TEXT               NULL,
+    Instagram         TEXT               NULL,
+    Links             TEXT               NULL,
+    LanguageAccount   TEXT               NULL,
+    Phone             TEXT               NULL,
+    Following         INT                NULL,
+    Followers         INT                NULL,
+    Likes             INT                NULL,
+    LastPostShowTotal INT                NULL,
+    AverageShows      INT                NULL,
+    MedianShows       INT                NULL,
+    TotalPosts        INT                NULL,
+    LastActionTime    DATETIME           NULL,
+    ParsingTime       DATETIME           NOT NULL
+)`); err != nil {
 		log.Print("DB is no Iinit", err)
 		return
 	}
@@ -68,13 +93,37 @@ func DBAddUser(user model.UserData) {
 
 	var (
 		Tx, _   = Connect.Begin()
-		stmt, _ = Tx.Prepare("INSERT INTO default.Users (Id,LinkAccount,Title,SubTitle,Comment,Mail,Telegram,Instagram,Links,LanguageAccount,Phone,Following,Followers,Likes,LastPostShowTotal,AverageShows,MedianShows,TotalPosts,LastActionTime,ParsingTime) VAlUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+		stmt, _ = Tx.Prepare("INSERT INTO tiktok.Users (LinkAccount,Title,SubTitle,Comment,Mail,Telegram,Instagram,Links,LanguageAccount,Phone,Following,Followers,Likes,LastPostShowTotal,AverageShows,MedianShows,TotalPosts,LastActionTime,ParsingTime) VAlUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
 	)
 
 	defer stmt.Close()
 
-	if _, err := stmt.Exec(
-		user.Id,
+	if user.LastActionTime.IsZero() {
+		if _, err := stmt.Exec(
+			user.LinkAccount,
+			user.Title,
+			user.SubTitle,
+			user.Comment,
+			user.Mail,
+			user.Telegram,
+			user.Instagram,
+			user.Links,
+			user.LanguageAccount,
+			user.Phone,
+			user.Following,
+			user.Followers,
+			user.Likes,
+			user.LastPostShowTotal,
+			user.AverageShows,
+			user.MedianShows,
+			user.TotalPosts,
+			nil,
+			user.ParsingTime,
+		); err != nil {
+			log.Println(err)
+			return
+		}
+	} else if _, err := stmt.Exec(
 		user.LinkAccount,
 		user.Title,
 		user.SubTitle,
@@ -95,7 +144,8 @@ func DBAddUser(user model.UserData) {
 		user.LastActionTime,
 		user.ParsingTime,
 	); err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return
 	}
 
 	err := Tx.Commit()
@@ -107,7 +157,7 @@ func DBAddUser(user model.UserData) {
 func InitUsers() int32 {
 	usersMap := make(map[string]int32)
 
-	rows, err := Connect.Query("SELECT Id, Title FROM default.Users ")
+	rows, err := Connect.Query("SELECT Id, Title FROM tiktok.Users ")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -143,7 +193,7 @@ func InitUsers() int32 {
 //возвращает true если существует данный user иначе false
 func FindUserDB(nick string) bool {
 
-	rows, err := Connect.Query("SELECT Title FROM default.Users WHERE Title = ?", nick)
+	rows, err := Connect.Query("SELECT Title FROM tiktok.Users WHERE Title = ?", nick)
 	if err != nil {
 		log.Fatal(err)
 	}

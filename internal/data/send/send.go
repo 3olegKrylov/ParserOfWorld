@@ -48,7 +48,8 @@ func SendDataHandlers(chromedbHandlCount int) {
 			for {
 				userNick := <-UsersChan
 
-				user = parsing.ParsingAccountData(userNick, ctx)
+				user = parsing.ParsingAccountData(userNick, user, ctx)
+
 				if user.Title != "" {
 					UsersToSend <- user
 				}

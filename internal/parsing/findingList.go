@@ -2,7 +2,6 @@ package parsing
 
 import (
 	"context"
-	"fmt"
 	"github.com/chromedp/chromedp"
 	"log"
 	"time"
@@ -31,11 +30,10 @@ func ParseFindList(urlStr string, ctx context.Context) string {
 	}
 
 	// Рекурсивно, ждёт пока стрница прогрузится, проверяет существует ли кнопка ещё на стрнице, кликает при существовании, заканчивает при отсутствии.
-	log.Println("Начинаем прогружать страницу прогружаем страницу")
+	log.Println("Начинаем прогружать страницу прогружаем страницу: ", urlStr)
 	count := 0
 
 	siteIsParse := true
-	fmt.Println("прогружаем: ", urlStr)
 	for {
 		err = chromedp.Run(ctx,
 			RunWithTimeOut(3,
