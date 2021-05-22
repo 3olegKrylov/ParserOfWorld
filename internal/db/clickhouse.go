@@ -1,11 +1,12 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/testSpace/model"
 	"log"
-	"strconv"
+	"time"
 )
 
 var Connect *sql.DB
@@ -92,18 +93,64 @@ func DBinit() {
 
 func DBAddUser(user model.UserData) {
 
-	sqlInsert := ""
+	ctx, cancelfunc := context.WithTimeout(context.Background(), 5*time.Second)
+	stmt, err := Connect.PrepareContext(ctx, "INSERT INTO tiktok.Users (LinkAccount,Title,SubTitle,Comment,Mail,Telegram,Instagram,Links,LanguageAccount,Phone,Following,Followers,Likes,LastPostShowTotal,AverageShows,MedianShows,TotalPosts,LastActionTime,ParsingTime) VAlUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+
+	defer cancelfunc()
+
+	if err != nil {
+		log.Println("Ошибка во время PrepareContex", err)
+		return
+	}
+	defer stmt.Close()
 
 	if user.LastActionTime.IsZero() {
-		sqlInsert = "INSERT INTO tiktok.Users (LinkAccount,Title,SubTitle,Comment,Mail,Telegram,Instagram,Links,LanguageAccount,Phone,Following,Followers,Likes,LastPostShowTotal,AverageShows,MedianShows,TotalPosts,ParsingTime) VAlUES(" + user.LinkAccount + user.Title + "," + user.SubTitle + "," + user.Comment + "," + user.Mail + "," + user.Telegram + "," + user.Instagram + "," + user.Links + "," + user.LanguageAccount + "," + user.Phone + "," + strconv.Itoa(int(user.Following)) + "," + strconv.Itoa(int(user.Followers)) + "," + strconv.Itoa(int(user.Likes)) + "," + strconv.Itoa(int(user.LastPostShowTotal)) + "," + strconv.Itoa(int(user.AverageShows)) + "," + strconv.Itoa(int(user.MedianShows)) + "," + strconv.Itoa(int(user.TotalPosts)) + "," + user.ParsingTime.String() + ")"
-
-	} else {
-		sqlInsert = "INSERT INTO tiktok.Users (LinkAccount,Title,SubTitle,Comment,Mail,Telegram,Instagram,Links,LanguageAccount,Phone,Following,Followers,Likes,LastPostShowTotal,AverageShows,MedianShows,TotalPosts,LastActionTime,ParsingTime) VAlUES(" + user.LinkAccount + user.Title + "," + user.SubTitle + "," + user.Comment + "," + user.Mail + "," + user.Telegram + "," + user.Instagram + "," + user.Links + "," + user.LanguageAccount + "," + user.Phone + "," + strconv.Itoa(int(user.Following)) + "," + strconv.Itoa(int(user.Followers)) + "," + strconv.Itoa(int(user.Likes)) + "," + strconv.Itoa(int(user.LastPostShowTotal)) + "," + strconv.Itoa(int(user.AverageShows)) + "," + strconv.Itoa(int(user.MedianShows)) + "," + strconv.Itoa(int(user.TotalPosts)) + "," + user.LastActionTime.String() + "," + user.ParsingTime.String() + ")"
-	}
-
-	_, err := Connect.Exec(sqlInsert)
-	if err != nil {
-		log.Println(err)
+		if _, err := stmt.ExecContext(ctx,
+			user.LinkAccount,
+			user.Title,
+			user.SubTitle,
+			user.Comment,
+			user.Mail,
+			user.Telegram,
+			user.Instagram,
+			user.Links,
+			user.LanguageAccount,
+			user.Phone,
+			user.Following,
+			user.Followers,
+			user.Likes,
+			user.LastPostShowTotal,
+			user.AverageShows,
+			user.MedianShows,
+			user.TotalPosts,
+			nil,
+			user.ParsingTime,
+		); err != nil {
+			log.Println("ошибка во время ExacContest", err)
+			return
+		}
+	} else if _, err := stmt.Exec(
+		user.LinkAccount,
+		user.Title,
+		user.SubTitle,
+		user.Comment,
+		user.Mail,
+		user.Telegram,
+		user.Instagram,
+		user.Links,
+		user.LanguageAccount,
+		user.Phone,
+		user.Following,
+		user.Followers,
+		user.Likes,
+		user.LastPostShowTotal,
+		user.AverageShows,
+		user.MedianShows,
+		user.TotalPosts,
+		user.LastActionTime,
+		user.ParsingTime,
+	); err != nil {
+		log.Println("ошибка во время ExacContest", err)
 		return
 	}
 }
@@ -113,7 +160,7 @@ func InitUsers() int32 {
 
 	rows, err := Connect.Query("SELECT Id, Title FROM tiktok.Users ")
 	if err != nil {
-		log.Fatal(err)
+		log.Println("ошибка во варемя initUsers", err)
 	}
 
 	defer rows.Close()
