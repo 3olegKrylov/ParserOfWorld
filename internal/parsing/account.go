@@ -135,12 +135,6 @@ func ParsingAccountData(nick string, user model.UserData, ctx context.Context) m
 
 	if linkOnTitile != "" {
 		user.Links = linkOnTitile
-		if strings.Contains(linkOnTitile, "instagram") || strings.Contains(linkOnTitile, "instagram.com") || strings.Contains(linkOnTitile, "inst."){
-			user.Instagram = user.Instagram + " "+ linkOnTitile
-		}
-		if strings.Contains(linkOnTitile, "t.me") || strings.Contains(linkOnTitile, "telegram"){
-			user.Instagram = user.Instagram + " "+ linkOnTitile
-		}
 	}
 
 	if linkOnTitile != "" && err != nil {
@@ -222,8 +216,14 @@ func ParsingAccountData(nick string, user model.UserData, ctx context.Context) m
 	if ActionTime != "" {
 		user.LastActionTime = time.Time(lastActionTimeParser(ActionTime))
 	}
-	//fmt.Println(time.Since(start), url)
-	//fmt.Println(user)
+	if user.Links!="" {
+		if strings.Contains(user.Links, "instagram") || strings.Contains(user.Links, "instagram.com") || strings.Contains(user.Links, "inst.") {
+			user.Instagram = user.Instagram + " " + user.Links
+		}
+		if strings.Contains(user.Links, "t.me/") || strings.Contains(user.Links, "telegram") {
+			user.Telegram = user.Telegram + " " + user.Links
+		}
+	}
 	return user
 }
 
