@@ -52,16 +52,36 @@ func ParsingAccountData(nick string, user model.UserData, ctx context.Context) m
 	err := chromedp.Run(ctx,
 		chromedp.Navigate(url),
 	)
-
 	if err != nil {
 		log.Println(err, "navigate", url)
 		return user
 	}
 
+	////при всплывающей вариф
+	//for {
+	//	what := ""
+	//	err = chromedp.Run(ctx,
+	//		RunWithTimeOut(
+	//			1,
+	//			chromedp.Tasks{chromedp.Text(`.verify-wrap`, &what, chromedp.NodeVisible, chromedp.ByQuery),
+	//			},
+	//		),
+	//	)
+	//	if err != nil {
+	//		break
+	//	} else {
+	//		log.Println("перегружаем страницу из-за варификации", url)
+	//		user.Title = "crash varification tiktok"
+	//		return user
+	//	}
+	//}
+
+
+
 	//смотрим существует ли страница - если нет title значит страницы нет
 	userIsExist := ""
 	err = chromedp.Run(ctx, RunWithTimeOut(
-		2,
+		3,
 		chromedp.Tasks{chromedp.Text(`.share-title`, &userIsExist, chromedp.NodeVisible, chromedp.ByQuery)},
 	))
 	if err != nil {
@@ -115,6 +135,12 @@ func ParsingAccountData(nick string, user model.UserData, ctx context.Context) m
 
 	if linkOnTitile != "" {
 		user.Links = linkOnTitile
+		if strings.Contains(linkOnTitile, "instagram") || strings.Contains(linkOnTitile, "instagram.com") || strings.Contains(linkOnTitile, "inst."){
+			user.Instagram = user.Instagram + " "+ linkOnTitile
+		}
+		if strings.Contains(linkOnTitile, "t.me") || strings.Contains(linkOnTitile, "telegram"){
+			user.Instagram = user.Instagram + " "+ linkOnTitile
+		}
 	}
 
 	if linkOnTitile != "" && err != nil {

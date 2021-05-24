@@ -8,12 +8,12 @@ import (
 	"math"
 )
 
-//делает скиншот экрана полноразмерный записывавает под названием elementScreenshot.png
+//создаёт полноразмерный скриншот экрана браузрера
 func FullScreenshot(quality int64, res *[]byte) chromedp.Tasks {
 	return chromedp.Tasks{
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			// get layout metrics
-			_, _, contentSize, err := page.GetLayoutMetrics().Do(ctx)
+			_, _, contentSize, _, _, _, err := page.GetLayoutMetrics().Do(ctx)
 			if err != nil {
 				return err
 			}

@@ -25,7 +25,6 @@ func main() {
 	data, err := ioutil.ReadFile("cmd/name.txt")
 	internal.UsersToSend = make(chan model.UserData, 6)
 
-
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -37,13 +36,12 @@ func main() {
 
 	urlStr := strings.Split(string(data), "\n")
 
-
 	countOfUsers := int32(0)
 	countOfUsers = db.InitUsers()
 	startCountOfUsers := countOfUsers
 
 	internal.UsersSendHanler(internal.UsersToSend, &countOfUsers)
-	internal.SendDataHandlers(2)
+	internal.SendDataHandlers(3)
 
 	start := time.Now()
 
@@ -54,10 +52,10 @@ func main() {
 
 	defer cancel()
 
-	sendingUsers:= 0
+	sendingUsers := 0
 	//парсинг аккаунтов
 	var text string
-	var lines[] string
+	var lines []string
 	var ok bool
 
 	for i := 0; i < len(urlStr); i++ {
@@ -69,9 +67,26 @@ func main() {
 
 		nameUser := strings.TrimSpace(urlStr[i])
 
-		text = parsing.ParseFindList("https://www.tiktok.com/search?q="+nameUser+"&lang=ru-RU", ctx)
-		lines = strings.Split(text, "\n\n")
+		//по не понятной причине причине после 12 переходов по страницам поиска tiktok, отображается отсутсвие пользователей на любой запрос
+		//поэтому требуется перезагрузить браузер для продолжения поисков
+		for {
+			text = parsing.ParseFindList("https://www.tiktok.com/search?q="+nameUser+"&lang=ru-RU", ctx)
 
+			lines = strings.Split(text, "\n\n")
+			fmt.Println("число аккаунтов: ", len(lines)/3)
+			if len(lines)/3 < 8 {
+				cancel()
+				ctx, cancel = chromedp.NewContext(
+					context.Background(),
+					chromedp.WithLogf(log.Printf),
+				)
+
+				defer cancel()
+				fmt.Println(lines)
+			} else {
+				break
+			}
+		}
 
 		for num, value := range lines {
 			if strings.HasSuffix(value, "Подписчики") {
@@ -81,16 +96,16 @@ func main() {
 					sendingUsers++
 				}
 			}
+
 		}
 
 		fmt.Println("закончил отправлять ", urlStr[i])
 		time.Sleep(time.Millisecond * 200)
 
-
 	}
 
-	fmt.Println("Отправил пользователей для дб: ",sendingUsers)
-	fmt.Println("Отправилось в итоге в DB: ", countOfUsers - startCountOfUsers)
+	fmt.Println("Отправил пользователей для дб: ", sendingUsers)
+	fmt.Println("Отправилось в итоге в DB: ", countOfUsers-startCountOfUsers)
 	fmt.Println("Время: ", time.Since(start), " \nКол-во юзеров: ", countOfUsers)
 
 }

@@ -22,7 +22,7 @@ func ParseFindList(urlStr string, ctx context.Context) string {
 	checkClearFinding := ""
 
 	err = chromedp.Run(ctx, RunWithTimeOut(
-		1,
+		2,
 		chromedp.Tasks{chromedp.Text(`.error-page`, &checkClearFinding, chromedp.NodeVisible, chromedp.ByQuery)},
 	))
 	if checkClearFinding != "" {
@@ -76,6 +76,8 @@ func ParseFindList(urlStr string, ctx context.Context) string {
 		if err != nil {
 			log.Println(err)
 		}
+
 		return text
 	}
+
 }

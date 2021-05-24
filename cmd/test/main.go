@@ -1,69 +1,49 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"github.com/chromedp/chromedp"
+	"github.com/testSpace/internal/parsing"
+
+
+	"log"
 	"time"
 )
+type UserData struct {
+	Id                int32
+	LinkAccount       string    //ссылка на аккаунт
+	Title             string    //ник аккаунта
+	SubTitle          string    //имя аккаунта
+	Comment           string    //комментарий / описание аккаунта
+	Mail              string    //почта в комменте
+	Telegram          string    //телеграм в комменте
+	Instagram         string    //инстаграм в комменте
+	Links             string    //ссылки в комменте
+	LanguageAccount   string    //имя аккаунта
+	Phone             string    //телефон
+	Following         int32     //~ количество подписок
+	Followers         int32     //~ количество подписчиков
+	Likes             int32     //~ количество лайков
+	LastPostShowTotal int32     //количество показов всего
+	AverageShows      int32     //среднее кол-во просмотров
+	MedianShows       int32     //медиана просмотрова
+	TotalPosts        int32     //количество постов аккаунта
+	LastActionTime    time.Time //время последнего поста
+	ParsingTime       time.Time //время парсинга аккаунта
+}
 
 func main() {
 
-	chanUser:=make(chan string, 4)
+	start := time.Now()
+	user := UserData{}
+	ctx, cancel := chromedp.NewContext(
+		context.Background(),
+		chromedp.WithLogf(log.Printf),
+	)
+	defer cancel()
 
-	go func() {
-		for{
-			time.Sleep(time.Second * 1)
-			fmt.Println(<-chanUser)
+	parsing.ParsingAccountData("", user, ctx)
 
-		}	}()
-
-	countSend:=0
-	for{
-		countSend++
-		chanUser<-"message"
-		fmt.Println("send the ", countSend, "message")
-	}
-
-
+	fmt.Println(time.Since(start))
 }
-
-//wg:= sync.WaitGroup{}
-//wg.Add(1000)
-//
-//print:=make(chan int)
-//
-//
-//for i:= 0; i<1000;i++{
-//	go func() {
-//		print <- i
-//		wg.Done()
-//	}()
-//}
-//
-//go func(chan int) {
-//	total := 0
-//
-//	for{
-//		var newPrin int
-//		newPrin = <- print
-//		total ++
-//		fmt.Println("total: ", total, " Value: ", newPrin)
-//	}
-//}(print)
-//
-//wg.Wait()
-
-//парсер аккаунтов
-//start := time.Now()
-//
-//
-//	ctx, cancel := chromedp.NewContext(
-//		context.Background(),
-//		chromedp.WithLogf(log.Printf),
-//	)
-//	defer cancel()
-//
-//	parsing.ParsingAccountData("mariakurashina5", ctx )
-//
-//
-//
-//	fmt.Println(time.Since(start))
