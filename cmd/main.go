@@ -7,20 +7,20 @@ import (
 	"github.com/chromedp/chromedp"
 	internal "github.com/testSpace/internal/data/send"
 	"github.com/testSpace/internal/db"
+	"github.com/testSpace/internal/fullscreen"
 	"github.com/testSpace/internal/parsing"
 	"github.com/testSpace/model"
 	"io/ioutil"
 	"log"
-	"net/http"
 	_ "net/http/pprof"
 	"strings"
 	"time"
 )
 
 func main() {
-	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
-	}()
+	//go func() {
+	//	log.Println(http.ListenAndServe("localhost:6060", nil))
+	//}()
 
 	data, err := ioutil.ReadFile("cmd/name.txt")
 	internal.UsersToSend = make(chan model.UserData, 6)
@@ -41,10 +41,9 @@ func main() {
 	startCountOfUsers := countOfUsers
 
 	internal.UsersSendHanler(internal.UsersToSend, &countOfUsers)
-	internal.SendDataHandlers(3)
+	internal.SendDataHandlers(2)
 
 	start := time.Now()
-
 	ctx, cancel := chromedp.NewContext(
 		context.Background(),
 		chromedp.WithLogf(log.Printf),
@@ -70,11 +69,20 @@ func main() {
 		//по не понятной причине причине после 12 переходов по страницам поиска tiktok, отображается отсутсвие пользователей на любой запрос
 		//поэтому требуется перезагрузить браузер для продолжения поисков
 		for {
-			text = parsing.ParseFindList("https://www.tiktok.com/search?q="+nameUser+"&lang=ru-RU", ctx)
+			text = parsing.ParseFindList("https://www.tiktok.com/search?lang=ru-RU&q="+nameUser, ctx)
 
 			lines = strings.Split(text, "\n\n")
 			fmt.Println("число аккаунтов: ", len(lines)/3)
 			if len(lines)/3 < 8 {
+
+				var buf []byte
+				if err = chromedp.Run(ctx, fullscreen.FullScreenshot(90, &buf)); err != nil {
+					log.Fatal(err)
+				}
+				if err = ioutil.WriteFile("fullScreenshot.png", buf, 0o644); err != nil {
+					log.Fatal(err)
+				}
+
 				cancel()
 				ctx, cancel = chromedp.NewContext(
 					context.Background(),
@@ -83,6 +91,7 @@ func main() {
 
 				defer cancel()
 				fmt.Println(lines)
+
 			} else {
 				break
 			}

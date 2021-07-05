@@ -76,8 +76,6 @@ func ParsingAccountData(nick string, user model.UserData, ctx context.Context) m
 	//	}
 	//}
 
-
-
 	//смотрим существует ли страница - если нет title значит страницы нет
 	userIsExist := ""
 	err = chromedp.Run(ctx, RunWithTimeOut(
@@ -216,12 +214,15 @@ func ParsingAccountData(nick string, user model.UserData, ctx context.Context) m
 	if ActionTime != "" {
 		user.LastActionTime = time.Time(lastActionTimeParser(ActionTime))
 	}
-	if user.Links!="" {
+	if user.Links != "" {
 		if strings.Contains(user.Links, "instagram") || strings.Contains(user.Links, "instagram.com") || strings.Contains(user.Links, "inst.") {
 			user.Instagram = user.Instagram + " " + user.Links
 		}
 		if strings.Contains(user.Links, "t.me/") || strings.Contains(user.Links, "telegram") {
 			user.Telegram = user.Telegram + " " + user.Links
+		}
+		if strings.Contains(user.Links, "@gmail") || strings.Contains(user.Links, "@yandex") || strings.Contains(user.Links, "@mail") || strings.Contains(user.Links, "@icloud") {
+			user.Mail = user.Mail + " " + user.Links
 		}
 	}
 	return user
@@ -289,6 +290,14 @@ func numParser(num string) int32 {
 		return -1
 	}
 	switch num[(len(num) - 1):] {
+	case "B":
+		num = strings.Replace(num, "B", "", -1)
+		val, err := strconv.ParseFloat(num, 32)
+		if err != nil {
+			//log.Println("Не смогу распарсить данные в float32: ", num, "\n", err)
+			return -1
+		}
+		return int32(val * 1000000000)
 	case "M":
 		num = strings.Replace(num, "M", "", -1)
 		val, err := strconv.ParseFloat(num, 32)
@@ -403,7 +412,8 @@ func commentParser(comment string) (links string, phoneNum string, instagram str
 					instagram += words[num+1] + " "
 				}
 			}
-		} else if strings.HasSuffix(value, "insta:") || strings.HasSuffix(value, "inst:") || strings.HasSuffix(value, "instagram:") || strings.HasSuffix(value, "инст:") || strings.HasSuffix(value, "инстаграм:") || strings.HasSuffix(value, "инста:") || strings.HasSuffix(value, "инстаграмм:") || strings.HasSuffix(value, "ig:") {
+		} else if strings.Contains(value, "insta:") || strings.Contains(value, "inst:") || strings.Contains(value, "instagram:") || strings.Contains(value, "инст:") || strings.Contains(value, "инстаграм:") || strings.Contains(value, "инста:") || strings.Contains(value, "инстаграмм:") ||
+			strings.Contains(value, "insta") || strings.Contains(value, "inst") || strings.Contains(value, "instagram") || strings.Contains(value, "инст") || strings.Contains(value, "инстаграм") || strings.Contains(value, "инста") {
 			instagram += words[num] + " "
 		}
 

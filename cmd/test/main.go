@@ -1,15 +1,14 @@
 package main
 
 import (
-	"context"
+	//"context"
 	"fmt"
-	"github.com/chromedp/chromedp"
-	"github.com/testSpace/internal/parsing"
-
-
-	"log"
+	//"github.com/chromedp/chromedp"
+	//"github.com/TikTokParser/internal/parsing"
+	//"log"
 	"time"
 )
+
 type UserData struct {
 	Id                int32
 	LinkAccount       string    //ссылка на аккаунт
@@ -36,14 +35,14 @@ type UserData struct {
 func main() {
 
 	start := time.Now()
-	user := UserData{}
-	ctx, cancel := chromedp.NewContext(
-		context.Background(),
-		chromedp.WithLogf(log.Printf),
-	)
-	defer cancel()
+	//user := UserData{}
+	//ctx, cancel := chromedp.NewContext(
+	//	context.Background(),
+	//	chromedp.WithLogf(log.Printf),
+	//)
+	//defer cancel()
 
-	parsing.ParsingAccountData("", user, ctx)
+	//parsing.ParsingAccountData("", user, ctx)
 
 	fmt.Println(time.Since(start))
 }

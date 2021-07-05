@@ -11,7 +11,9 @@ func ParseFindList(urlStr string, ctx context.Context) string {
 	var text string
 
 	err := chromedp.Run(ctx,
+		chromedp.Sleep(time.Second*1),
 		chromedp.Navigate(urlStr),
+		chromedp.Sleep(time.Second*1),
 	)
 	if err != nil {
 		log.Fatal("Error Navigate Parsing Accounts to ", urlStr, "\nerror: ", err)

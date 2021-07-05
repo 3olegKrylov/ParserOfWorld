@@ -41,11 +41,13 @@ func SendDataHandlers(chromedbHandlCount int) {
 				context.Background(),
 				chromedp.WithLogf(log.Printf),
 			)
+			chromedp.ProxyServer("176.9.119.170:3128")
 			defer cancel()
 
 			user := model.UserData{}
 
 			for {
+
 				userNick := <-UsersChan
 
 				user = parsing.ParsingAccountData(userNick, user, ctx)
